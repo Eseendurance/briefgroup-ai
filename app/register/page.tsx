@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { useRouter } from "next/navigation";
 import { auth } from "@/app/lib/firebase";
 
 export default function RegisterPage() {
 
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -19,7 +21,7 @@ export default function RegisterPage() {
         password
       );
 
-      alert("Account created");
+      router.push("/dashboard");
 
     } catch (error) {
 

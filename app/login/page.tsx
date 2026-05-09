@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { useRouter } from "next/navigation";
 import { auth } from "@/app/lib/firebase";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      alert("Signed in");
+      router.push("/dashboard");
     } catch (error) {
       console.error(error);
       alert("Login failed");
