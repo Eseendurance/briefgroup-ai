@@ -4,6 +4,7 @@ import {
   Activity,
   AlertTriangle,
   Bell,
+  Binary,
   Building2,
   Camera,
   CheckCircle2,
@@ -16,11 +17,12 @@ import {
   Lock,
   LogOut,
   MessageSquare,
+  Orbit,
   Plus,
+  Radar,
   Settings,
   ShieldCheck,
   ShoppingCart,
-  Sparkles,
   TrendingUp,
   UploadCloud,
   Zap,
@@ -106,6 +108,19 @@ const reports = [
   "Inspection evidence and compliance record",
 ];
 
+const moduleAccents: Record<ModuleId, string> = {
+  overview: "from-emerald-300 to-cyan-200",
+  energy: "from-yellow-200 to-emerald-300",
+  fault: "from-rose-300 to-amber-200",
+  forecast: "from-cyan-200 to-blue-300",
+  assistant: "from-violet-300 to-cyan-200",
+  reports: "from-amber-200 to-emerald-300",
+  inspections: "from-fuchsia-300 to-emerald-300",
+  marketplace: "from-amber-200 to-orange-300",
+  sites: "from-sky-200 to-emerald-300",
+  settings: "from-slate-200 to-cyan-200",
+};
+
 const modules = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "energy", label: "Smart Energy I&V", icon: Zap },
@@ -138,21 +153,31 @@ function StatCard({
   value,
   detail,
   icon: Icon,
+  tone = "emerald",
 }: {
   label: string;
   value: string;
   detail: string;
   icon: typeof Activity;
+  tone?: "emerald" | "cyan" | "amber" | "rose";
 }) {
+  const tones = {
+    emerald: "border-emerald-300/15 bg-emerald-300/10 text-emerald-100",
+    cyan: "border-cyan-200/15 bg-cyan-300/10 text-cyan-100",
+    amber: "border-amber-200/15 bg-amber-300/10 text-amber-100",
+    rose: "border-rose-200/15 bg-rose-300/10 text-rose-100",
+  };
+
   return (
-    <article className="rounded-lg border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur-xl">
+    <article className="group relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.055] p-5 shadow-2xl backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-white/20">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-white/60">{label}</p>
           <p className="mt-2 text-3xl font-semibold">{value}</p>
           <p className="mt-3 text-sm text-white/55">{detail}</p>
         </div>
-        <div className="rounded-lg bg-emerald-300/10 p-3 text-emerald-200">
+        <div className={`rounded-lg border p-3 ${tones[tone]}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -170,7 +195,8 @@ function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur-xl">
+    <section className="relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.055] p-5 shadow-2xl backdrop-blur-xl">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-200/35 to-transparent" />
       <div className="mb-5 flex items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">{title}</h2>
         {action}
@@ -202,24 +228,28 @@ function DashboardContent() {
         value: report ? `${report.operationalScore}%` : "Pilot",
         detail: report?.status ?? "Live AI report engine",
         icon: Gauge,
+        tone: "emerald" as const,
       },
       {
         label: "Weather Intelligence",
         value: weather,
         detail: "Live climate signal for field operations",
         icon: CloudSun,
+        tone: "cyan" as const,
       },
       {
         label: "Sites Online",
         value: "2 / 3",
         detail: "Remote energy and inspection locations",
         icon: Building2,
+        tone: "amber" as const,
       },
       {
         label: "Security",
         value: "Protected",
         detail: "Firebase auth, route guard, and API limits",
         icon: ShieldCheck,
+        tone: "rose" as const,
       },
     ],
     [report, weather],
@@ -309,18 +339,33 @@ function DashboardContent() {
 
   const activeLabel =
     modules.find((item) => item.id === activeModule)?.label ?? "Dashboard";
+  const activeAccent = moduleAccents[activeModule];
 
   return (
-    <main className="min-h-screen bg-[#06110f] text-white">
-      <div className="flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/25 p-4 backdrop-blur-xl lg:block">
+    <main className="brief-grid min-h-screen bg-[#040908] text-white">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(52,211,153,0.18),transparent_28%),radial-gradient(circle_at_90%_0%,rgba(103,232,249,0.12),transparent_30%),radial-gradient(circle_at_65%_80%,rgba(251,191,36,0.10),transparent_34%)]" />
+      <div className="relative flex min-h-screen">
+        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-[#030806]/85 p-4 backdrop-blur-xl lg:block">
           <div className="flex items-center gap-3 px-2 py-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-300 text-[#06110f]">
-              <Zap className="h-5 w-5" />
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-lg border border-emerald-200/30 bg-emerald-300/10 text-emerald-100">
+              <Orbit className="absolute h-9 w-9 text-emerald-300/30" />
+              <Binary className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold">Brief Group</p>
-              <p className="text-xs text-white/50">Pilot Command</p>
+              <p className="font-semibold">Brief Nexus</p>
+              <p className="text-xs text-white/50">Infrastructure OS</p>
+            </div>
+          </div>
+
+          <div className="mx-2 mt-4 rounded-lg border border-white/10 bg-white/[0.045] p-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+              Pilot Network
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-300 brief-pulse" />
+              <span className="text-sm text-emerald-100">
+                3 sites connected
+              </span>
             </div>
           </div>
 
@@ -331,7 +376,7 @@ function DashboardContent() {
                 onClick={() => setActiveModule(item.id)}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition ${
                   activeModule === item.id
-                    ? "bg-emerald-300 text-[#06110f]"
+                    ? "bg-white text-[#06110f]"
                     : "text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
               >
@@ -343,11 +388,11 @@ function DashboardContent() {
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 border-b border-white/10 bg-[#06110f]/90 backdrop-blur-xl">
+          <header className="sticky top-0 z-20 border-b border-white/10 bg-[#040908]/85 backdrop-blur-xl">
             <div className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-emerald-200/70">
-                  Launch Dashboard
+                <p className={`bg-gradient-to-r ${activeAccent} bg-clip-text text-xs uppercase tracking-[0.24em] text-transparent`}>
+                  Launch Dashboard / Pilot Mission Control
                 </p>
                 <h1 className="mt-1 text-2xl font-semibold md:text-4xl">
                   {activeLabel}
@@ -355,8 +400,9 @@ function DashboardContent() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button className="rounded-lg border border-white/10 bg-white/[0.05] p-3 text-white/75">
+                <button className="relative rounded-lg border border-white/10 bg-white/[0.05] p-3 text-white/75">
                   <Bell className="h-5 w-5" />
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-300" />
                 </button>
                 <div className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white/70">
                   {user?.email}
@@ -378,7 +424,7 @@ function DashboardContent() {
                   onClick={() => setActiveModule(item.id)}
                   className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ${
                     activeModule === item.id
-                      ? "bg-emerald-300 text-[#06110f]"
+                      ? "bg-white text-[#06110f]"
                       : "bg-white/[0.06] text-white/70"
                   }`}
                 >
@@ -392,34 +438,54 @@ function DashboardContent() {
           <div className="px-5 py-6">
             {activeModule === "overview" ? (
               <div className="space-y-5">
-                <section className="overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.20),transparent_32%),linear-gradient(135deg,rgba(11,28,25,1),rgba(8,17,32,1))] p-6 shadow-2xl md:p-8">
-                  <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                <section className="brief-scanline relative overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(135deg,rgba(5,17,14,0.96),rgba(7,13,24,0.98)),radial-gradient(circle_at_20%_10%,rgba(52,211,153,0.28),transparent_30%)] p-6 shadow-2xl md:p-8">
+                  <div className="absolute right-8 top-8 hidden h-28 w-28 rounded-full border border-emerald-200/20 lg:block">
+                    <div className="absolute inset-4 rounded-full border border-cyan-200/20" />
+                    <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-300 brief-pulse" />
+                  </div>
+                  <div className="relative grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                     <div>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-sm text-emerald-100">
-                        <Sparkles className="h-4 w-4" />
-                        Pilot program ready
+                      <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
+                        <Radar className="h-4 w-4" />
+                        Live pilot network
                       </span>
                       <h2 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight md:text-6xl">
-                        AI infrastructure intelligence for real sites, real
-                        users, and real operating decisions.
+                        Brief Nexus turns field signals into boardroom-ready
+                        infrastructure decisions.
                       </h2>
                       <p className="mt-5 max-w-2xl text-base leading-7 text-white/65 md:text-lg">
-                        Monitor energy, inspect field assets, predict faults,
-                        generate reports, and manage client pilot locations from
-                        one secure dashboard.
+                        A secure pilot cockpit for energy verification,
+                        inspections, machine risk, weather intelligence, and
+                        automated reporting across client sites.
                       </p>
+                      <div className="mt-7 flex flex-wrap gap-3">
+                        {["Energy", "Weather", "Faults", "Inspections"].map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/70"
+                          >
+                            {item} signal online
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-black/25 p-5">
-                      <div className="grid grid-cols-2 gap-3">
+                    <div className="relative min-h-[360px] rounded-lg border border-white/10 bg-black/30 p-5">
+                      <div className="absolute inset-5 rounded-lg border border-white/10" />
+                      <div className="absolute left-[16%] top-[18%] h-4 w-4 rounded-full bg-emerald-300 shadow-[0_0_34px_rgba(52,211,153,0.9)] brief-pulse" />
+                      <div className="absolute right-[18%] top-[32%] h-3 w-3 rounded-full bg-cyan-200 shadow-[0_0_28px_rgba(103,232,249,0.8)] brief-pulse" />
+                      <div className="absolute bottom-[18%] left-[34%] h-3 w-3 rounded-full bg-amber-200 shadow-[0_0_28px_rgba(251,191,36,0.8)] brief-pulse" />
+                      <div className="absolute bottom-[28%] right-[28%] h-5 w-5 rounded-full bg-rose-200 shadow-[0_0_28px_rgba(251,113,133,0.65)] brief-pulse" />
+                      <div className="relative grid h-full gap-3 sm:grid-cols-2">
                         {[
-                          ["500 kW", "Lagos capacity"],
-                          ["91%", "Fault confidence"],
-                          ["24/7", "AI monitoring"],
-                          ["10 MB", "Inspection limit"],
-                        ].map(([value, label]) => (
-                          <div key={label} className="rounded-lg bg-white/[0.06] p-4">
-                            <p className="text-2xl font-semibold">{value}</p>
-                            <p className="mt-1 text-sm text-white/55">{label}</p>
+                          ["Lagos", "Energy verified", "92%"],
+                          ["Abuja", "Peak forecast", "84%"],
+                          ["Port Harcourt", "Maintenance lane", "61%"],
+                          ["Pilot Core", "Security active", "100%"],
+                        ].map(([city, label, value]) => (
+                          <div key={city} className="rounded-lg border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
+                            <p className="text-sm text-white/45">{city}</p>
+                            <p className="mt-2 font-semibold">{label}</p>
+                            <p className="mt-4 text-3xl font-semibold">{value}</p>
                           </div>
                         ))}
                       </div>
@@ -523,9 +589,55 @@ function PilotReport({ report }: { report: Report | null }) {
   );
 }
 
+function SignalRibbon({
+  title,
+  detail,
+  items,
+}: {
+  title: string;
+  detail: string;
+  items: string[];
+}) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(120deg,rgba(255,255,255,0.075),rgba(255,255,255,0.025))] p-5 shadow-2xl backdrop-blur-xl">
+      <div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/60">
+            Brief signal layer
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold">{title}</h2>
+          <p className="mt-3 text-sm leading-6 text-white/60">{detail}</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-4">
+          {items.map((item, index) => (
+            <div
+              key={item}
+              className="relative rounded-lg border border-white/10 bg-black/25 p-4"
+            >
+              <span className="text-xs text-white/35">0{index + 1}</span>
+              <p className="mt-4 text-sm font-medium">{item}</p>
+              <div className="mt-4 h-1 rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-cyan-200"
+                  style={{ width: `${68 + index * 8}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function EnergyModule() {
   return (
     <div className="space-y-5">
+      <SignalRibbon
+        title="Smart Energy I&V"
+        detail="Verify consumption, detect leakage, and turn meter evidence into client-ready proof."
+        items={["Meter integrity", "Usage anomaly", "Tariff impact", "Site confidence"]}
+      />
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard label="Verified Energy" value="58 MWh" detail="Current pilot month" icon={Zap} />
         <StatCard label="Cost Avoidance" value="NGN 4.8M" detail="Estimated from anomaly reduction" icon={TrendingUp} />
@@ -556,6 +668,11 @@ function EnergyModule() {
 function FaultModule() {
   return (
     <div className="space-y-5">
+      <SignalRibbon
+        title="Fault Intelligence"
+        detail="Rank machine risks by confidence, urgency, and operational impact before downtime starts."
+        items={["Thermal drift", "Load imbalance", "UPS stress", "Maintenance action"]}
+      />
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard label="Open Risks" value="3" detail="AI-ranked maintenance items" icon={AlertTriangle} />
         <StatCard label="Highest Confidence" value="91%" detail="Transformer TX-04" icon={Cpu} />
@@ -583,7 +700,13 @@ function FaultModule() {
 
 function ForecastModule() {
   return (
-    <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
+    <div className="space-y-5">
+      <SignalRibbon
+        title="Forecast Studio"
+        detail="Blend weather, historical load, and inspection outcomes into practical operating forecasts."
+        items={["Climate signal", "Demand curve", "Asset health", "Pilot forecast"]}
+      />
+      <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
       <Panel title="AI Energy Forecast">
         <div className="h-96 min-h-96">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -614,6 +737,7 @@ function ForecastModule() {
           ))}
         </div>
       </Panel>
+      </div>
     </div>
   );
 }
@@ -630,6 +754,12 @@ function AssistantModule({
   setChatInput: (value: string) => void;
 }) {
   return (
+    <div className="space-y-5">
+      <SignalRibbon
+        title="Nexus Assistant"
+        detail="A pilot copilot that explains site signals in plain language for operators and decision makers."
+        items={["Ask", "Analyze", "Recommend", "Report"]}
+      />
     <Panel title="AI Energy Assistant">
       <div className="space-y-3">
         {messages.map((message, index) => (
@@ -663,6 +793,7 @@ function AssistantModule({
         </button>
       </div>
     </Panel>
+    </div>
   );
 }
 
@@ -700,6 +831,12 @@ function InspectionsModule({
   uploadName: string;
 }) {
   return (
+    <div className="space-y-5">
+      <SignalRibbon
+        title="Inspection Evidence Hub"
+        detail="Collect field evidence, queue computer inspection, and attach findings to the operational record."
+        items={["Upload", "Classify", "Inspect", "Attach"]}
+      />
     <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
       <Panel title="Inspection Upload">
         <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-emerald-300/35 bg-black/25 p-10 text-center text-sm text-white/65 transition hover:border-emerald-200">
@@ -731,12 +868,16 @@ function InspectionsModule({
         </div>
       </Panel>
     </div>
+    </div>
   );
 }
 
 function MarketplaceModule() {
   return (
-    <section className="flex min-h-[60vh] items-center justify-center rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.14),transparent_35%),rgba(255,255,255,0.06)] p-8 text-center shadow-2xl">
+    <section className="relative flex min-h-[60vh] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.16),transparent_35%),linear-gradient(135deg,rgba(25,18,8,0.92),rgba(6,9,8,0.96))] p-8 text-center shadow-2xl">
+      <div className="absolute inset-8 rounded-lg border border-amber-200/10" />
+      <div className="absolute left-10 top-10 h-3 w-3 rounded-full bg-amber-200 brief-pulse" />
+      <div className="absolute bottom-14 right-16 h-2 w-2 rounded-full bg-emerald-300 brief-pulse" />
       <div className="max-w-xl">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-amber-300/15 text-amber-100">
           <ShoppingCart className="h-8 w-8" />
@@ -791,6 +932,12 @@ function SitesModule() {
 
 function SettingsModule() {
   return (
+    <div className="space-y-5">
+      <SignalRibbon
+        title="Pilot Configuration"
+        detail="Tune contact data, alert posture, security posture, and pilot readiness from one place."
+        items={["Identity", "Alerts", "Security", "Readiness"]}
+      />
     <div className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
       <Panel title="Pilot Account">
         <div className="grid gap-4 md:grid-cols-2">
@@ -821,6 +968,7 @@ function SettingsModule() {
           ))}
         </div>
       </Panel>
+    </div>
     </div>
   );
 }
