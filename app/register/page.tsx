@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth } from "@/app/lib/firebase";
 
@@ -59,6 +60,13 @@ export default function RegisterPage() {
         >
           Register
         </button>
+
+        <p className="mt-6 text-center text-sm text-gray-400">
+          Already have an account?{" "}
+          <Link href="/login" className="text-blue-300 hover:text-blue-200">
+            Login here
+          </Link>
+        </p>
 
       </div>
     </main>
