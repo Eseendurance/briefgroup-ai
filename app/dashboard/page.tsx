@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CloudSun,
   Cpu,
+  Droplets,
   FileText,
   Gauge,
   LayoutDashboard,
@@ -23,6 +24,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Sprout,
   TrendingUp,
   UploadCloud,
   Zap,
@@ -80,6 +82,15 @@ const energyData = [
   { label: "Jun", consumption: 61, verified: 58, forecast: 63 },
 ];
 
+const farmData = [
+  { label: "Mon", moisture: 64, cropHealth: 88, irrigation: 42 },
+  { label: "Tue", moisture: 61, cropHealth: 87, irrigation: 48 },
+  { label: "Wed", moisture: 58, cropHealth: 84, irrigation: 56 },
+  { label: "Thu", moisture: 67, cropHealth: 89, irrigation: 37 },
+  { label: "Fri", moisture: 72, cropHealth: 91, irrigation: 28 },
+  { label: "Sat", moisture: 69, cropHealth: 90, irrigation: 31 },
+];
+
 const faultSignals = [
   {
     asset: "Inverter Bank A",
@@ -103,6 +114,7 @@ const faultSignals = [
 
 const reports = [
   "Daily energy verification summary",
+  "Smart farming crop and irrigation advisory",
   "Weekly site performance report",
   "Fault risk and maintenance actions",
   "Inspection evidence and compliance record",
@@ -111,6 +123,7 @@ const reports = [
 const moduleAccents: Record<ModuleId, string> = {
   overview: "from-emerald-300 to-cyan-200",
   energy: "from-yellow-200 to-emerald-300",
+  farming: "from-lime-200 to-emerald-300",
   fault: "from-rose-300 to-amber-200",
   forecast: "from-cyan-200 to-blue-300",
   assistant: "from-violet-300 to-cyan-200",
@@ -124,6 +137,7 @@ const moduleAccents: Record<ModuleId, string> = {
 const modules = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "energy", label: "Smart Energy I&V", icon: Zap },
+  { id: "farming", label: "Smart Farming", icon: Sprout },
   { id: "fault", label: "AI Fault Detection", icon: Cpu },
   { id: "forecast", label: "AI Forecasting", icon: TrendingUp },
   { id: "assistant", label: "AI Assistant", icon: MessageSquare },
@@ -216,7 +230,7 @@ function DashboardContent() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      text: "Welcome to the Brief Group pilot dashboard. Ask about energy usage, fault risk, reports, or inspections.",
+      text: "Welcome to the Brief Group pilot dashboard. Ask about energy usage, smart farming, fault risk, reports, or inspections.",
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -236,6 +250,13 @@ function DashboardContent() {
         detail: "Live climate signal for field operations",
         icon: CloudSun,
         tone: "cyan" as const,
+      },
+      {
+        label: "Farm Intelligence",
+        value: "91%",
+        detail: "Crop health and irrigation readiness",
+        icon: Sprout,
+        tone: "emerald" as const,
       },
       {
         label: "Sites Online",
@@ -331,7 +352,7 @@ function DashboardContent() {
       {
         role: "assistant",
         text:
-          "Pilot insight: energy load is stable, Abuja has the strongest output, and TX-04 needs maintenance review. I can turn this into an automated report.",
+          "Pilot insight: farm moisture is safe, crop health is strong, energy load is stable, and TX-04 needs maintenance review. I can turn this into an automated report.",
       },
     ]);
     setChatInput("");
@@ -352,7 +373,7 @@ function DashboardContent() {
               <Binary className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold">Brief Nexus</p>
+              <p className="font-semibold">Brief Group</p>
               <p className="text-xs text-white/50">Infrastructure OS</p>
             </div>
           </div>
@@ -450,16 +471,17 @@ function DashboardContent() {
                         Live pilot network
                       </span>
                       <h2 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight md:text-6xl">
-                        Brief Nexus turns field signals into boardroom-ready
+                        Brief Group turns field signals into boardroom-ready
                         infrastructure decisions.
                       </h2>
                       <p className="mt-5 max-w-2xl text-base leading-7 text-white/65 md:text-lg">
-                        A secure pilot cockpit for energy verification,
-                        inspections, machine risk, weather intelligence, and
-                        automated reporting across client sites.
+                        A secure pilot cockpit for energy verification, smart
+                        farming, inspections, machine risk, weather
+                        intelligence, and automated reporting across client
+                        sites.
                       </p>
                       <div className="mt-7 flex flex-wrap gap-3">
-                        {["Energy", "Weather", "Faults", "Inspections"].map((item) => (
+                        {["Energy", "Farms", "Weather", "Faults", "Inspections"].map((item) => (
                           <span
                             key={item}
                             className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/70"
@@ -478,9 +500,9 @@ function DashboardContent() {
                       <div className="relative grid h-full gap-3 sm:grid-cols-2">
                         {[
                           ["Lagos", "Energy verified", "92%"],
+                          ["Farm Grid", "Crop health", "91%"],
                           ["Abuja", "Peak forecast", "84%"],
                           ["Port Harcourt", "Maintenance lane", "61%"],
-                          ["Pilot Core", "Security active", "100%"],
                         ].map(([city, label, value]) => (
                           <div key={city} className="rounded-lg border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
                             <p className="text-sm text-white/45">{city}</p>
@@ -493,7 +515,7 @@ function DashboardContent() {
                   </div>
                 </section>
 
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
                   {stats.map((item) => (
                     <StatCard key={item.label} {...item} />
                   ))}
@@ -507,6 +529,7 @@ function DashboardContent() {
             ) : null}
 
             {activeModule === "energy" ? <EnergyModule /> : null}
+            {activeModule === "farming" ? <FarmingModule /> : null}
             {activeModule === "fault" ? <FaultModule /> : null}
             {activeModule === "forecast" ? <ForecastModule /> : null}
             {activeModule === "assistant" ? (
@@ -665,6 +688,92 @@ function EnergyModule() {
   );
 }
 
+function FarmingModule() {
+  return (
+    <div className="space-y-5">
+      <SignalRibbon
+        title="Smart Farming Intelligence"
+        detail="Turn weather, soil, crop, and irrigation signals into practical planting and farm performance decisions."
+        items={["Soil moisture", "Crop stress", "Irrigation timing", "Yield outlook"]}
+      />
+
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Crop Health"
+          value="91%"
+          detail="AI field condition score"
+          icon={Sprout}
+          tone="emerald"
+        />
+        <StatCard
+          label="Soil Moisture"
+          value="69%"
+          detail="Safe irrigation window"
+          icon={Droplets}
+          tone="cyan"
+        />
+        <StatCard
+          label="Rainfall Risk"
+          value="31%"
+          detail="Live weather input"
+          icon={CloudSun}
+          tone="amber"
+        />
+        <StatCard
+          label="Yield Outlook"
+          value="+12%"
+          detail="Pilot season projection"
+          icon={TrendingUp}
+          tone="emerald"
+        />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+        <Panel title="Farm Climate And Crop Trend">
+          <div className="h-96 min-h-96">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <LineChart data={farmData}>
+                <CartesianGrid stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="label" stroke="rgba(255,255,255,0.55)" />
+                <YAxis stroke="rgba(255,255,255,0.55)" />
+                <Tooltip
+                  contentStyle={{
+                    background: "#07110f",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 8,
+                  }}
+                />
+                <Line dataKey="cropHealth" stroke="#bef264" strokeWidth={3} />
+                <Line dataKey="moisture" stroke="#67e8f9" strokeWidth={3} />
+                <Line dataKey="irrigation" stroke="#fbbf24" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Panel>
+
+        <Panel title="Farm Pilot Actions">
+          <div className="space-y-3">
+            {[
+              ["Irrigation", "Delay heavy watering for 18 hours."],
+              ["Planting", "Weather window is suitable for field prep."],
+              ["Crop stress", "North plot needs inspection after heat rise."],
+              ["Report", "Generate farm advisory for field team."],
+            ].map(([label, detail]) => (
+              <div key={label} className="rounded-lg border border-white/10 bg-black/25 p-4">
+                <div className="flex items-center gap-3">
+                  <Sprout className="h-5 w-5 text-lime-200" />
+                  <p className="font-semibold">{label}</p>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-white/60">{detail}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
 function FaultModule() {
   return (
     <div className="space-y-5">
@@ -756,9 +865,9 @@ function AssistantModule({
   return (
     <div className="space-y-5">
       <SignalRibbon
-        title="Nexus Assistant"
+        title="Brief Group Assistant"
         detail="A pilot copilot that explains site signals in plain language for operators and decision makers."
-        items={["Ask", "Analyze", "Recommend", "Report"]}
+        items={["Ask", "Farm", "Energy", "Report"]}
       />
     <Panel title="AI Energy Assistant">
       <div className="space-y-3">
@@ -782,7 +891,7 @@ function AssistantModule({
           onKeyDown={(event) => {
             if (event.key === "Enter") sendMessage();
           }}
-          placeholder="Ask about energy, faults, forecasts, or reports"
+          placeholder="Ask about farming, energy, faults, forecasts, or reports"
           className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/25 px-4 py-3 outline-none focus:border-emerald-300"
         />
         <button
