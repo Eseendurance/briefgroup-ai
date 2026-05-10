@@ -2,16 +2,25 @@
 
 ## 1. Add Firebase Environment Variables
 
+The app now includes Vercel-safe Firebase fallback values so deployment can work
+even if your Vercel account does not show the variable form. Environment
+variables are still supported and preferred for a cleaner production setup.
+
 1. In VS Code, open the project folder: `C:\Users\HomePC\Desktop\briefgroup-ai`.
 2. Copy `.env.example` and rename the copy to `.env.local`.
 3. Go to Firebase Console, open your project, then open Project settings.
 4. In Your apps, copy the web app Firebase config values.
 5. Paste the values into `.env.local`.
-6. In Vercel, open Project Settings, then Environment Variables.
-7. Add the same variables from `.env.local`.
-8. Redeploy the Vercel project.
+6. In Vercel, open the project, not the Team settings page.
+7. Go to Settings, then Environment Variables.
+8. Click Add New if the button is visible.
+9. Add the same variables from `.env.local`.
+10. Redeploy the Vercel project.
 
 Do not commit `.env.local`. The `.gitignore` already protects `.env*`.
+
+If the Add New button is not visible in Vercel, continue deployment anyway. This
+codebase will use the fallback Firebase web config from `app/lib/firebase.ts`.
 
 ## 2. Secure Firebase Auth
 
