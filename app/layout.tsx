@@ -19,19 +19,22 @@ export const metadata: Metadata = {
     template: "%s | Brief Group AI",
   },
   description:
-    "Brief Group AI builds intelligent energy, farm, machine inspection, and infrastructure analytics systems.",
+    "Brief Group is a premium global SaaS platform for energy monitoring, smart farm prediction, AI fault detection, automated reports, and computer vision inspection.",
   keywords: [
     "Brief Group",
     "AI infrastructure",
     "energy monitoring",
+    "smart farm prediction",
     "farm intelligence",
+    "automated reports",
+    "computer vision inspection",
     "machine inspection",
     "predictive analytics",
   ],
   openGraph: {
     title: "Brief Group AI",
     description:
-      "AI infrastructure for energy monitoring, farm intelligence, inspection systems, and automated reporting.",
+      "Premium SaaS for energy monitoring, smart farm prediction, AI fault detection, automated reports, and computer vision inspection.",
     type: "website",
   },
 };

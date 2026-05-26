@@ -14,14 +14,8 @@ import {
   Droplets,
   FileText,
   Gauge,
-  LayoutDashboard,
-  Lock,
   LogOut,
-  MessageSquare,
   Orbit,
-  Plus,
-  Radar,
-  Settings,
   ShieldCheck,
   ShoppingCart,
   Sprout,
@@ -121,31 +115,21 @@ const reports = [
 ];
 
 const moduleAccents: Record<ModuleId, string> = {
-  overview: "from-emerald-300 to-cyan-200",
   energy: "from-yellow-200 to-emerald-300",
   farming: "from-lime-200 to-emerald-300",
   fault: "from-rose-300 to-amber-200",
-  forecast: "from-cyan-200 to-blue-300",
-  assistant: "from-violet-300 to-cyan-200",
   reports: "from-amber-200 to-emerald-300",
   inspections: "from-fuchsia-300 to-emerald-300",
   marketplace: "from-amber-200 to-orange-300",
-  sites: "from-sky-200 to-emerald-300",
-  settings: "from-slate-200 to-cyan-200",
 };
 
 const modules = [
-  { id: "overview", label: "Dashboard", icon: LayoutDashboard },
-  { id: "energy", label: "Smart Energy I&V", icon: Zap },
-  { id: "farming", label: "Smart Farming", icon: Sprout },
+  { id: "energy", label: "Energy Monitoring", icon: Zap },
+  { id: "farming", label: "Smart Farm Prediction", icon: Sprout },
   { id: "fault", label: "AI Fault Detection", icon: Cpu },
-  { id: "forecast", label: "AI Forecasting", icon: TrendingUp },
-  { id: "assistant", label: "AI Assistant", icon: MessageSquare },
-  { id: "reports", label: "Reports", icon: FileText },
-  { id: "inspections", label: "Inspections", icon: Camera },
+  { id: "reports", label: "Automated Reports", icon: FileText },
+  { id: "inspections", label: "Computer Vision Inspection", icon: Camera },
   { id: "marketplace", label: "Digital Marketplace", icon: ShoppingCart },
-  { id: "sites", label: "Sites", icon: Building2 },
-  { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
 type ModuleId = (typeof modules)[number]["id"];
@@ -222,18 +206,11 @@ function Panel({
 
 function DashboardContent() {
   const { user, logout } = useAuth();
-  const [activeModule, setActiveModule] = useState<ModuleId>("overview");
+  const [activeModule, setActiveModule] = useState<ModuleId>("energy");
   const [weather, setWeather] = useState("Loading");
   const [report, setReport] = useState<Report | null>(null);
   const [inspection, setInspection] = useState<InspectionResult | null>(null);
   const [uploadName, setUploadName] = useState("Choose an image or PDF");
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      text: "Welcome to the Brief Group pilot dashboard. Ask about energy usage, smart farming, fault risk, reports, or inspections.",
-    },
-  ]);
-  const [chatInput, setChatInput] = useState("");
 
   const stats = useMemo(
     () => [
@@ -342,22 +319,6 @@ function DashboardContent() {
     }
   }
 
-  function sendMessage() {
-    const question = chatInput.trim();
-    if (!question) return;
-
-    setMessages((current) => [
-      ...current,
-      { role: "user", text: question },
-      {
-        role: "assistant",
-        text:
-          "Pilot insight: farm moisture is safe, crop health is strong, energy load is stable, and TX-04 needs maintenance review. I can turn this into an automated report.",
-      },
-    ]);
-    setChatInput("");
-  }
-
   const activeLabel =
     modules.find((item) => item.id === activeModule)?.label ?? "Dashboard";
   const activeAccent = moduleAccents[activeModule];
@@ -457,89 +418,15 @@ function DashboardContent() {
           </header>
 
           <div className="px-5 py-6">
-            {activeModule === "overview" ? (
-              <div className="space-y-5">
-                <section className="brief-scanline relative overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(135deg,rgba(5,17,14,0.96),rgba(7,13,24,0.98)),radial-gradient(circle_at_20%_10%,rgba(52,211,153,0.28),transparent_30%)] p-6 shadow-2xl md:p-8">
-                  <div className="absolute right-8 top-8 hidden h-28 w-28 rounded-full border border-emerald-200/20 lg:block">
-                    <div className="absolute inset-4 rounded-full border border-cyan-200/20" />
-                    <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-300 brief-pulse" />
-                  </div>
-                  <div className="relative grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-                    <div>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-sm text-cyan-100">
-                        <Radar className="h-4 w-4" />
-                        Live pilot network
-                      </span>
-                      <h2 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight md:text-6xl">
-                        Brief Group turns field signals into boardroom-ready
-                        infrastructure decisions.
-                      </h2>
-                      <p className="mt-5 max-w-2xl text-base leading-7 text-white/65 md:text-lg">
-                        A secure pilot cockpit for energy verification, smart
-                        farming, inspections, machine risk, weather
-                        intelligence, and automated reporting across client
-                        sites.
-                      </p>
-                      <div className="mt-7 flex flex-wrap gap-3">
-                        {["Energy", "Farms", "Weather", "Faults", "Inspections"].map((item) => (
-                          <span
-                            key={item}
-                            className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/70"
-                          >
-                            {item} signal online
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="relative min-h-[360px] rounded-lg border border-white/10 bg-black/30 p-5">
-                      <div className="absolute inset-5 rounded-lg border border-white/10" />
-                      <div className="absolute left-[16%] top-[18%] h-4 w-4 rounded-full bg-emerald-300 shadow-[0_0_34px_rgba(52,211,153,0.9)] brief-pulse" />
-                      <div className="absolute right-[18%] top-[32%] h-3 w-3 rounded-full bg-cyan-200 shadow-[0_0_28px_rgba(103,232,249,0.8)] brief-pulse" />
-                      <div className="absolute bottom-[18%] left-[34%] h-3 w-3 rounded-full bg-amber-200 shadow-[0_0_28px_rgba(251,191,36,0.8)] brief-pulse" />
-                      <div className="absolute bottom-[28%] right-[28%] h-5 w-5 rounded-full bg-rose-200 shadow-[0_0_28px_rgba(251,113,133,0.65)] brief-pulse" />
-                      <div className="relative grid h-full gap-3 sm:grid-cols-2">
-                        {[
-                          ["Lagos", "Energy verified", "92%"],
-                          ["Farm Grid", "Crop health", "91%"],
-                          ["Abuja", "Peak forecast", "84%"],
-                          ["Port Harcourt", "Maintenance lane", "61%"],
-                        ].map(([city, label, value]) => (
-                          <div key={city} className="rounded-lg border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
-                            <p className="text-sm text-white/45">{city}</p>
-                            <p className="mt-2 font-semibold">{label}</p>
-                            <p className="mt-4 text-3xl font-semibold">{value}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-                  {stats.map((item) => (
-                    <StatCard key={item.label} {...item} />
-                  ))}
-                </div>
-
-                <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
-                  <EnergyChart />
-                  <PilotReport report={report} />
-                </div>
-              </div>
-            ) : null}
+            <div className="mb-5 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+              {stats.map((item) => (
+                <StatCard key={item.label} {...item} />
+              ))}
+            </div>
 
             {activeModule === "energy" ? <EnergyModule /> : null}
             {activeModule === "farming" ? <FarmingModule /> : null}
             {activeModule === "fault" ? <FaultModule /> : null}
-            {activeModule === "forecast" ? <ForecastModule /> : null}
-            {activeModule === "assistant" ? (
-              <AssistantModule
-                chatInput={chatInput}
-                messages={messages}
-                sendMessage={sendMessage}
-                setChatInput={setChatInput}
-              />
-            ) : null}
             {activeModule === "reports" ? <ReportsModule report={report} /> : null}
             {activeModule === "inspections" ? (
               <InspectionsModule
@@ -549,8 +436,6 @@ function DashboardContent() {
               />
             ) : null}
             {activeModule === "marketplace" ? <MarketplaceModule /> : null}
-            {activeModule === "sites" ? <SitesModule /> : null}
-            {activeModule === "settings" ? <SettingsModule /> : null}
           </div>
         </section>
       </div>
@@ -807,105 +692,6 @@ function FaultModule() {
   );
 }
 
-function ForecastModule() {
-  return (
-    <div className="space-y-5">
-      <SignalRibbon
-        title="Forecast Studio"
-        detail="Blend weather, historical load, and inspection outcomes into practical operating forecasts."
-        items={["Climate signal", "Demand curve", "Asset health", "Pilot forecast"]}
-      />
-      <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
-      <Panel title="AI Energy Forecast">
-        <div className="h-96 min-h-96">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart data={energyData}>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-              <XAxis dataKey="label" stroke="rgba(255,255,255,0.55)" />
-              <YAxis stroke="rgba(255,255,255,0.55)" />
-              <Tooltip
-                contentStyle={{
-                  background: "#07110f",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 8,
-                }}
-              />
-              <Line dataKey="consumption" stroke="#34d399" strokeWidth={3} />
-              <Line dataKey="forecast" stroke="#fbbf24" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Panel>
-      <Panel title="Forecast Inputs">
-        <div className="space-y-3 text-sm text-white/70">
-          {["Weather exposure", "Historical load", "Inspection outcomes", "Machine health", "Site capacity"].map((item) => (
-            <div key={item} className="flex items-center justify-between rounded-lg bg-black/25 p-3">
-              <span>{item}</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-            </div>
-          ))}
-        </div>
-      </Panel>
-      </div>
-    </div>
-  );
-}
-
-function AssistantModule({
-  chatInput,
-  messages,
-  sendMessage,
-  setChatInput,
-}: {
-  chatInput: string;
-  messages: { role: string; text: string }[];
-  sendMessage: () => void;
-  setChatInput: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-5">
-      <SignalRibbon
-        title="Brief Group Assistant"
-        detail="A pilot copilot that explains site signals in plain language for operators and decision makers."
-        items={["Ask", "Farm", "Energy", "Report"]}
-      />
-    <Panel title="AI Energy Assistant">
-      <div className="space-y-3">
-        {messages.map((message, index) => (
-          <div
-            key={`${message.role}-${index}`}
-            className={`max-w-3xl rounded-lg p-4 text-sm leading-6 ${
-              message.role === "assistant"
-                ? "bg-emerald-300/10 text-emerald-50"
-                : "ml-auto bg-white/10 text-white"
-            }`}
-          >
-            {message.text}
-          </div>
-        ))}
-      </div>
-      <div className="mt-5 flex gap-3">
-        <input
-          value={chatInput}
-          onChange={(event) => setChatInput(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") sendMessage();
-          }}
-          placeholder="Ask about farming, energy, faults, forecasts, or reports"
-          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/25 px-4 py-3 outline-none focus:border-emerald-300"
-        />
-        <button
-          onClick={sendMessage}
-          className="rounded-lg bg-emerald-300 px-5 py-3 font-semibold text-[#06110f]"
-        >
-          Send
-        </button>
-      </div>
-    </Panel>
-    </div>
-  );
-}
-
 function ReportsModule({ report }: { report: Report | null }) {
   return (
     <div className="space-y-5">
@@ -998,87 +784,6 @@ function MarketplaceModule() {
         </p>
       </div>
     </section>
-  );
-}
-
-function SitesModule() {
-  return (
-    <div className="space-y-5">
-      <div className="flex justify-end">
-        <button className="flex items-center gap-2 rounded-lg bg-emerald-300 px-4 py-3 font-semibold text-[#06110f]">
-          <Plus className="h-4 w-4" />
-          Add Site
-        </button>
-      </div>
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {sites.map((site) => (
-          <article key={site.name} className="rounded-lg border border-white/10 bg-white/[0.06] p-5 shadow-2xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-semibold">{site.name}</p>
-                <p className="mt-1 text-sm text-white/50">{site.location}</p>
-              </div>
-              <span className="rounded-full bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100">
-                {site.status}
-              </span>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-white/45">Capacity</p>
-                <p className="mt-1 font-semibold">{site.capacity}</p>
-              </div>
-              <div className="rounded-lg bg-black/25 p-3">
-                <p className="text-white/45">Devices</p>
-                <p className="mt-1 font-semibold">{site.devices}</p>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SettingsModule() {
-  return (
-    <div className="space-y-5">
-      <SignalRibbon
-        title="Pilot Configuration"
-        detail="Tune contact data, alert posture, security posture, and pilot readiness from one place."
-        items={["Identity", "Alerts", "Security", "Readiness"]}
-      />
-    <div className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
-      <Panel title="Pilot Account">
-        <div className="grid gap-4 md:grid-cols-2">
-          {["Organization", "Contact email", "Pilot region", "Alert threshold"].map((field) => (
-            <label key={field} className="block">
-              <span className="text-sm text-white/55">{field}</span>
-              <input
-                className="mt-2 w-full rounded-lg border border-white/10 bg-black/25 px-4 py-3 outline-none focus:border-emerald-300"
-                placeholder={field}
-              />
-            </label>
-          ))}
-        </div>
-      </Panel>
-      <Panel title="Production Security">
-        <div className="space-y-3">
-          {[
-            "Firebase user accounts",
-            "Protected dashboard routes",
-            "API bearer token requirement",
-            "Rate limited pilot endpoints",
-            "Firestore and Storage rules",
-          ].map((item) => (
-            <div key={item} className="flex items-center gap-3 rounded-lg bg-black/25 p-3 text-sm text-white/70">
-              <Lock className="h-4 w-4 text-emerald-300" />
-              {item}
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
-    </div>
   );
 }
 
