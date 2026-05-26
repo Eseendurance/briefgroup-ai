@@ -28,13 +28,14 @@ export const metadata: Metadata = {
     "farm intelligence",
     "automated reports",
     "computer vision inspection",
+    "customer care chatbot",
     "machine inspection",
     "predictive analytics",
   ],
   openGraph: {
     title: "Brief Group AI",
     description:
-      "Premium SaaS for energy monitoring, smart farm prediction, AI fault detection, automated reports, and computer vision inspection.",
+      "Premium SaaS for energy monitoring, smart farm prediction, AI fault detection, automated reports, computer vision inspection, and AI customer care.",
     type: "website",
   },
 };

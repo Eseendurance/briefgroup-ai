@@ -104,6 +104,15 @@ export default function Home() {
             <a href="#roadmap" className="transition hover:text-emerald-700">
               Roadmap
             </a>
+            <Link
+              href="/customer-care"
+              className="transition hover:text-emerald-700"
+            >
+              Customer Care
+            </Link>
+            <Link href="/contact" className="transition hover:text-emerald-700">
+              Contact
+            </Link>
           </div>
 
           <Link
@@ -168,6 +177,12 @@ export default function Home() {
               <Play className="h-5 w-5" aria-hidden="true" />
               View Dashboard
             </a>
+            <Link
+              href="/customer-care"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-6 py-4 font-semibold text-emerald-800 shadow-sm backdrop-blur transition hover:bg-emerald-100"
+            >
+              Ask AI Assistant
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -338,6 +353,12 @@ export default function Home() {
             >
               Launch Dashboard
               <ArrowRight className="h-5 w-5" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/contact"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 px-6 py-4 font-semibold text-white"
+            >
+              Contact Us
             </Link>
           </div>
         </div>
