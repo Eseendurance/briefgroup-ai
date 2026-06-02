@@ -38,6 +38,9 @@ export const metadata: Metadata = {
       "Premium SaaS for energy monitoring, smart farm prediction, AI fault detection, automated reports, computer vision inspection, and AI customer care.",
     type: "website",
   },
+  icons: {
+    icon: "/brief-group-logo.svg",
+  },
 };
 
 export default function RootLayout({

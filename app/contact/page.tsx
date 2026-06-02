@@ -7,9 +7,9 @@ import {
   MapPin,
   MessageCircle,
   Phone,
-  Sparkles,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 const contactMethods = [
@@ -42,9 +42,13 @@ export default function ContactPage() {
       <nav className="border-b border-white/70 bg-white/75 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <Link href="/" className="flex items-center gap-3 font-semibold">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#102027] text-white">
-              <Sparkles className="h-5 w-5" />
-            </span>
+            <Image
+              src="/brief-group-logo.svg"
+              alt="Brief Group logo"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-lg object-cover"
+            />
             Brief Group
           </Link>
           <Link

@@ -4,7 +4,6 @@ import {
   Activity,
   AlertTriangle,
   Bell,
-  Binary,
   Building2,
   Camera,
   CheckCircle2,
@@ -15,7 +14,6 @@ import {
   FileText,
   Gauge,
   LogOut,
-  Orbit,
   ShieldCheck,
   ShoppingCart,
   Sprout,
@@ -24,6 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Area,
   AreaChart,
@@ -329,10 +328,13 @@ function DashboardContent() {
       <div className="relative flex min-h-screen">
         <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-[#030806]/85 p-4 backdrop-blur-xl lg:block">
           <div className="flex items-center gap-3 px-2 py-4">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-lg border border-emerald-200/30 bg-emerald-300/10 text-emerald-100">
-              <Orbit className="absolute h-9 w-9 text-emerald-300/30" />
-              <Binary className="h-5 w-5" />
-            </div>
+            <Image
+              src="/brief-group-logo.svg"
+              alt="Brief Group logo"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-lg object-cover"
+            />
             <div>
               <p className="font-semibold">Brief Group</p>
               <p className="text-xs text-white/50">Infrastructure OS</p>

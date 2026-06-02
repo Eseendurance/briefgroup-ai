@@ -8,16 +8,15 @@ import {
   CheckCircle2,
   CloudSun,
   FileText,
-  Globe2,
   Lock,
   Play,
   Radar,
   ShoppingCart,
-  Sparkles,
   Sprout,
   Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 const features = [
@@ -88,9 +87,13 @@ export default function Home() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <Link href="/" className="flex items-center gap-3 font-semibold">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#102027] text-white">
-              <Sparkles className="h-5 w-5" aria-hidden="true" />
-            </span>
+            <Image
+              src="/brief-group-logo.svg"
+              alt="Brief Group logo"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-lg object-cover"
+            />
             <span className="text-lg tracking-wide">Brief Group</span>
           </Link>
 
@@ -127,21 +130,11 @@ export default function Home() {
       <section className="relative min-h-[94vh] overflow-hidden px-5 pt-28">
         <HeroMotionScene />
         <div className="relative z-10 mx-auto flex min-h-[calc(94vh-7rem)] max-w-7xl flex-col justify-center pb-20">
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-4 py-2 text-sm font-semibold text-emerald-800 shadow-sm backdrop-blur"
-          >
-            <Globe2 className="h-4 w-4" aria-hidden="true" />
-            Premium global SaaS for infrastructure intelligence
-          </motion.p>
-
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="mt-7 max-w-5xl text-5xl font-semibold leading-[1.02] tracking-tight text-[#102027] md:text-7xl"
+            className="max-w-5xl text-5xl font-semibold leading-[1.02] tracking-tight text-[#102027] md:text-7xl"
           >
             AI operations for energy, farming, inspections, and industrial risk.
           </motion.h1>

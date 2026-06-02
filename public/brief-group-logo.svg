@@ -1,0 +1,39 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Brief Group logo</title>
+  <desc id="desc">Brief Group solar, farm, wave, and green bird inspired company mark.</desc>
+  <rect width="512" height="512" rx="64" fill="#F4E7E4"/>
+  <circle cx="110" cy="104" r="58" fill="none" stroke="#0F4F86" stroke-width="12"/>
+  <path d="M61 126c23-51 70-51 102-16-36-10-64-1-102 16Z" fill="#0F4F86"/>
+  <path d="M70 144c19-34 49-40 84-18-31-5-55 4-84 18Z" fill="#0F4F86"/>
+  <path d="M86 159c14-22 34-29 60-18-23-2-41 6-60 18Z" fill="#0F4F86"/>
+  <path d="M196 275l53-32 95 4 56 35-93 20-111-27Z" fill="#0F4F86"/>
+  <path d="M225 250l-32 20 31 8 34-22-33-6Z" fill="#F4E7E4"/>
+  <path d="M266 255l-36 23 38 9 36-25-38-7Z" fill="#F4E7E4"/>
+  <path d="M313 263l-38 26 43 10 40-24-45-12Z" fill="#F4E7E4"/>
+  <path d="M181 282l40 10 32-20-41-9-31 19Z" fill="#F4E7E4"/>
+  <path d="M229 294l45 11 33-23-45-10-33 22Z" fill="#F4E7E4"/>
+  <path d="M283 306l52 13 37-22-54-13-35 22Z" fill="#F4E7E4"/>
+  <path d="M160 289l42 12 30-19-43-10-29 17Z" fill="#F4E7E4"/>
+  <path d="M207 303l48 13 31-21-48-11-31 19Z" fill="#F4E7E4"/>
+  <path d="M262 319l56 14 35-21-57-14-34 21Z" fill="#F4E7E4"/>
+  <path d="M186 248c19-6 35-16 51-31 8 28 22 47 44 59-35 4-63-2-95-28Z" fill="#FDBA17"/>
+  <path d="M335 257c38-3 67-21 88-51-3 37 7 67 30 94-40-12-72-22-118-43Z" fill="#F97316"/>
+  <path d="M316 252c7-48 24-82 57-107-3 52 14 87 51 109-44-4-78-5-108-2Z" fill="#FACC15"/>
+  <path d="M286 265c5-49 17-84 37-105 9 47 5 83-12 112l-25-7Z" fill="#FACC15"/>
+  <path d="M298 259c16-55 15-103-5-144 35 24 52 60 48 108-10 13-23 23-43 36Z" fill="#FACC15"/>
+  <path d="M292 272c5-43 14-78 29-106" stroke="#16843A" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="312" cy="166" rx="26" ry="13" transform="rotate(-28 312 166)" fill="#5DCE35"/>
+  <ellipse cx="344" cy="183" rx="28" ry="13" transform="rotate(-23 344 183)" fill="#4CC02D"/>
+  <ellipse cx="300" cy="203" rx="24" ry="12" transform="rotate(31 300 203)" fill="#64D947"/>
+  <ellipse cx="344" cy="226" rx="25" ry="12" transform="rotate(-18 344 226)" fill="#56CA35"/>
+  <ellipse cx="290" cy="235" rx="25" ry="12" transform="rotate(34 290 235)" fill="#55C934"/>
+  <path d="M352 65c18 4 36 14 56 30-31-5-57-6-78 4 5-14 12-25 22-34Z" fill="#1EA51E"/>
+  <path d="M365 93c26-8 57 1 88 29-45-9-78-3-99 18-1-17 2-31 11-47Z" fill="#18801C"/>
+  <path d="M365 139c34-27 70-33 109-18-45 7-80 23-103 55-8-14-10-27-6-37Z" fill="#28B526"/>
+  <path d="M360 111c37 31 45 73 24 126-5-45-19-79-48-102 9-11 17-18 24-24Z" fill="#0E5E1B"/>
+  <path d="M371 103c18-28 39-42 65-43-22 16-37 35-45 57-7-6-13-10-20-14Z" fill="#2CAF25"/>
+  <ellipse cx="407" cy="99" rx="15" ry="11" fill="#58C83B"/>
+  <circle cx="411" cy="96" r="3" fill="#102027"/>
+  <path d="M421 97l33-5" stroke="#102027" stroke-width="4" stroke-linecap="round"/>
+  <text x="256" y="400" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="900" font-style="italic" letter-spacing="7" fill="#0F4F86">BRIEF GROUP</text>
+</svg>
