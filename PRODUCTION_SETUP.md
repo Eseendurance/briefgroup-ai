@@ -76,13 +76,54 @@ values, not an AI diagnosis.
 The existing weather and report API routes verify Firebase ID tokens and use
 rate limits. The public AI preview does not require an account.
 
-## 5. Current Pilot Scope and Trust
+## 5. Workspaces, database, and billing
 
-The app does not yet include Paystack, Flutterwave, or Stripe checkout, paid
-plans, organization-level workspaces/RBAC, email invitations, or verified
-SOC 2/ISO 27001 certifications. Do not advertise these as available. Billing
-requires a selected provider, configured merchant credentials, webhook
-secrets, and approved regional pricing before it can be safely enabled.
+Firebase remains the authentication and operational-data layer. PostgreSQL with
+Prisma stores workspace membership, trials, billing provider references, audit
+events, and white-label settings. A Firebase UID is used as the external user
+identity; no Firebase passwords are copied to PostgreSQL.
+
+1. Provision PostgreSQL with pooled and direct connection URLs.
+2. Set `DATABASE_URL` to the pooled application connection and `DIRECT_URL` to
+   the direct migration connection.
+3. Run `npm run db:deploy` after creating and reviewing a migration. For local
+   schema development, use `npm run db:migrate -- --name workspace_billing`.
+4. Run `npm run db:generate` after schema changes.
+5. Configure `APP_BASE_URL` with the canonical HTTPS origin.
+6. Configure at least one payment provider using the variables in `.env.example`.
+   Stripe prices must be monthly USD prices of exactly $29 and $99. The checkout
+   endpoint checks price currency, interval, and amount before creating a session.
+   Paystack plan codes and amounts are configured in NGN minor units (kobo);
+   Flutterwave uses merchant plan IDs and NGN amounts.
+7. Register each webhook with the provider:
+   - Stripe: `/api/webhooks/stripe`
+   - Paystack: `/api/webhooks/paystack`
+   - Flutterwave: `/api/webhooks/flutterwave`
+8. Use test credentials and provider test-mode webhook deliveries before enabling
+   production keys. Never put secret keys in `NEXT_PUBLIC_` variables.
+
+New registrations create a 14-day trial workspace and an OWNER membership.
+`/workspace` displays current plan state, member roster, and editable workspace
+branding. Billing state changes only after a verified webhook; returning from
+checkout alone does not grant paid access. The report-generation write route and
+workspace settings route enforce trial/subscription access server-side.
+
+Paystack and Flutterwave amounts are required configuration; checkout fails
+closed when merchant plans or amounts are missing. Confirm their plan amounts,
+renewal cadence, taxes, and supported currencies in the merchant accounts before
+using real payment credentials. Customer invitations and automated email delivery
+are not enabled yet. Custom-domain values are stored but DNS and routing still
+require separate setup.
+
+The public pricing is a USD reference for Stripe. The regional gateways display
+their configured NGN amount at provider checkout. The website's pilot scenarios
+are illustrative measurement plans, not customer testimonials or proven savings.
+No SOC 2 / ISO 27001 certification, dedicated database, SLA, or enterprise
+integration is claimed without independent evidence and a signed agreement.
+Seat limits and AI-credit budgets are not yet metered or enforced automatically.
+The billing guard is applied to report generation and workspace settings APIs;
+existing direct Firebase Storage / Firestore mutations do not consult PostgreSQL
+subscription state and must not be treated as a complete platform-wide paywall.
 
 ## 6. Add A Custom Domain From Truehost To Vercel
 

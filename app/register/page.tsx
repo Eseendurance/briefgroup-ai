@@ -84,12 +84,37 @@ export default function RegisterPage() {
         createdAt: serverTimestamp(),
       });
 
+      const workspaceResponse = await fetch("/api/workspaces", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${await user.getIdToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          workspaceName: workspaceName.trim(),
+          teamSize,
+          region: region.trim(),
+          role,
+          goal,
+        }),
+      });
+      const workspaceResult = (await workspaceResponse.json()) as {
+        error?: string;
+      };
+      if (!workspaceResponse.ok) {
+        throw new Error(
+          workspaceResult.error || "We could not set up your workspace.",
+        );
+      }
+
       setProfileSavePending(false);
       router.push("/dashboard");
     } catch (registrationError) {
       if (accountCreated) {
         setError(
-          "Your account exists, but we couldn't save your pilot profile. Check your connection and try saving again.",
+          registrationError instanceof Error
+            ? `Your account exists, but setup is not complete: ${registrationError.message}`
+            : "Your account exists, but we couldn't finish workspace setup. Please retry.",
         );
       } else if (
         registrationError instanceof FirebaseError &&

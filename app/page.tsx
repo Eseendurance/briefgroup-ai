@@ -85,6 +85,9 @@ export default function Home() {
             <a className="transition hover:text-emerald-700" href="#try-it">
               Try it
             </a>
+            <a className="transition hover:text-emerald-700" href="#pricing">
+              Pricing
+            </a>
             <Link
               className="transition hover:text-emerald-700"
               href="/customer-care"
@@ -252,6 +255,88 @@ export default function Home() {
       </section>
 
       <section className="px-5 py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">
+              Built around real work
+            </p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Start with one important handoff.
+            </h2>
+            <p className="mt-5 text-base leading-7 text-slate-600">
+              Every team has a different starting point. These are pilot scenarios we can
+              shape with partners—not customer case studies or claimed outcomes.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {[
+              {
+                image: "/images/farm-analytics.png",
+                alt: "Farm team reviewing crop and weather information",
+                eyebrow: "Field planning",
+                title: "Bring observations into one calmer view.",
+                detail:
+                  "Explore how weather context, field notes, and next-step decisions could travel together.",
+                measure: "Potential measure: time from observation to shared plan.",
+              },
+              {
+                image: "/images/solar-inspection.png",
+                alt: "Technician inspecting equipment at an energy site",
+                eyebrow: "Equipment checks",
+                title: "Make the next inspection easier to prepare.",
+                detail:
+                  "Give operators a consistent way to capture findings and prepare a useful handoff.",
+                measure: "Potential measure: completeness of inspection records.",
+              },
+              {
+                image: "/images/team-analytics.png",
+                alt: "Operations team looking at a shared report",
+                eyebrow: "Team operations",
+                title: "Turn a busy shift into a clearer update.",
+                detail:
+                  "Shape site notes into a concise summary that managers and field teams can both use.",
+                measure: "Potential measure: time to prepare and acknowledge a handoff.",
+              },
+            ].map((story) => (
+              <article
+                key={story.eyebrow}
+                className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm"
+              >
+                <div className="relative h-52 bg-slate-100">
+                  <Image
+                    src={story.image}
+                    alt={story.alt}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 33vw"
+                    className="object-cover"
+                  />
+                  <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-emerald-800 shadow-sm">
+                    Pilot scenario
+                  </span>
+                </div>
+                <div className="p-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                    {story.eyebrow}
+                  </p>
+                  <h3 className="mt-2 text-xl font-semibold leading-7 text-slate-950">
+                    {story.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{story.detail}</p>
+                  <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500">
+                    {story.measure}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="mt-5 text-xs leading-5 text-slate-500">
+            We publish partner results only with permission and measured baselines. No customer
+            names, savings, uptime, or performance outcomes are implied here.
+          </p>
+        </div>
+      </section>
+
+      <section className="px-5 py-20 sm:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="order-2 overflow-hidden rounded-[1.75rem] border border-slate-100 bg-white shadow-xl shadow-slate-200/50 lg:order-1">
             <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
@@ -315,6 +400,90 @@ export default function Home() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="pricing" className="scroll-mt-20 border-y border-slate-100 bg-slate-50 px-5 py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">
+              Clear ways to get started
+            </p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+              Start small. Grow with your team.
+            </h2>
+            <p className="mt-5 text-base leading-7 text-slate-600">
+              Begin with a 14-day workspace trial. Choose a paid plan when you are ready to keep
+              working together.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {[
+              {
+                name: "Pro",
+                price: "$29",
+                description: "For an individual or a first working group.",
+                features: ["Workspace dashboard", "Subscription status", "USD and NGN checkout options"],
+              },
+              {
+                name: "Business / Pilot",
+                price: "$99",
+                description: "For a team validating a real operating workflow.",
+                features: ["Workspace branding settings", "Provider-confirmed subscription", "Partner support by agreement"],
+              },
+              {
+                name: "Enterprise / Partner",
+                price: "Let’s scope it",
+                description: "A conversation about your sites, systems, and goals.",
+                features: [
+                  "Custom seat and usage needs",
+                  "Integration planning",
+                  "Service commitments by agreement",
+                ],
+              },
+            ].map((plan, index) => (
+              <article
+                key={plan.name}
+                className={`rounded-3xl border p-6 shadow-sm sm:p-7 ${
+                  index === 1
+                    ? "border-emerald-200 bg-white shadow-emerald-900/5"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <p className="text-sm font-semibold text-emerald-800">{plan.name}</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                  {plan.price}
+                  {index < 2 && (
+                    <span className="text-sm font-medium text-slate-500"> / month</span>
+                  )}
+                </p>
+                <p className="mt-3 min-h-12 text-sm leading-6 text-slate-600">
+                  {plan.description}
+                </p>
+                <ul className="mt-5 space-y-2.5">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" aria-hidden="true" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={index === 2 ? "/contact" : "/register"}
+                  className="mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-emerald-200 px-5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-50"
+                >
+                  {index === 2 ? "Talk about a partnership" : "Start a free trial"}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </article>
+            ))}
+          </div>
+          <p className="mx-auto mt-5 max-w-3xl text-center text-xs leading-5 text-slate-500">
+            Prices shown are monthly USD reference prices for Stripe checkout. Paystack and
+            Flutterwave use NGN plans and amounts configured in the merchant accounts and shown
+            by those providers. Seat counts and AI-credit budgets are not automatically enforced
+            yet. Enterprise features, dedicated infrastructure, and SLAs require a signed agreement.
+          </p>
         </div>
       </section>
 

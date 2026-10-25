@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiError, rateLimit, requireBearerToken } from "@/app/lib/api-security";
+import { apiError, rateLimit } from "@/app/lib/api-security";
+import { requireWorkspaceWriteAccess } from "@/app/lib/billing-access";
 
 type ReportPayload = {
   energyLoad?: number;
@@ -19,8 +20,8 @@ export async function POST(request: NextRequest) {
   const limited = await rateLimit(request, "reports", 12);
   if (limited) return limited;
 
-  const unauthorized = await requireBearerToken(request);
-  if (unauthorized) return unauthorized;
+  const access = await requireWorkspaceWriteAccess(request);
+  if (access instanceof NextResponse) return access;
 
   const body = (await request.json().catch(() => null)) as ReportPayload | null;
   if (!body) return apiError("Invalid report payload.");

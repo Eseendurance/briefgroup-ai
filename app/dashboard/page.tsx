@@ -360,6 +360,12 @@ function DashboardContent() {
             </div>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
+            <Link
+              href="/workspace"
+              className="inline-flex min-h-10 items-center rounded-full border border-emerald-200 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
+            >
+              Workspace & billing
+            </Link>
             <span className="hidden max-w-52 truncate text-sm text-slate-500 sm:block">
               {user?.email}
             </span>
@@ -461,7 +467,7 @@ function DashboardContent() {
               <button
                 type="submit"
                 disabled={isLoadingWeather}
-                className="mt-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
+                className="mt-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-60"
               >
                 {isLoadingWeather ? (
                   <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
