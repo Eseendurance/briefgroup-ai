@@ -16,10 +16,10 @@ function scoreLabel(score: number) {
 }
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, "reports", 12);
+  const limited = await rateLimit(request, "reports", 12);
   if (limited) return limited;
 
-  const unauthorized = requireBearerToken(request);
+  const unauthorized = await requireBearerToken(request);
   if (unauthorized) return unauthorized;
 
   const body = (await request.json().catch(() => null)) as ReportPayload | null;
@@ -29,13 +29,18 @@ export async function POST(request: NextRequest) {
   const machineHealth = Number(body.machineHealth ?? 82);
   const rainfallRisk = Number(body.rainfallRisk ?? 34);
   const inspectionFindings = String(body.inspectionFindings ?? "").slice(0, 500);
+  const inputs = [energyLoad, machineHealth, rainfallRisk];
+
+  if (inputs.some((value) => !Number.isFinite(value) || value < 0 || value > 100)) {
+    return apiError("Energy, machine health, and rainfall values must be between 0 and 100.");
+  }
 
   const operationalScore = Math.round(
     machineHealth * 0.45 + (100 - rainfallRisk) * 0.25 + (100 - energyLoad) * 0.3,
   );
 
   return NextResponse.json({
-    title: "Brief Group Automated Intelligence Report",
+    title: "Brief Group Operational Summary",
     generatedAt: new Date().toISOString(),
     operationalScore,
     status: scoreLabel(operationalScore),

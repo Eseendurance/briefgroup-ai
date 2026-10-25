@@ -16,17 +16,29 @@ service cloud.firestore {
     }
 
     match /inspections/{inspectionId} {
-      allow read, create: if signedIn()
+      allow read: if signedIn()
+        && resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if signedIn()
         && resource.data.ownerId == request.auth.uid;
     }
 
     match /reports/{reportId} {
-      allow read, create: if signedIn()
+      allow read: if signedIn()
+        && resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if signedIn()
         && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /aiInteractions/{interactionId} {
+      allow read: if signedIn()
+        && resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /admin/{document=**} {

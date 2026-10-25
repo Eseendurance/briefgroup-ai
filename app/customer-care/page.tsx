@@ -10,10 +10,12 @@ import {
   Send,
   UserRound,
 } from "lucide-react";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
+import { auth, db } from "@/app/lib/firebase";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -29,84 +31,80 @@ const quickQuestions = [
   "Is Digital Marketplace available?",
 ];
 
-const knowledgeBase = [
-  {
-    keywords: ["energy", "monitoring", "power", "electricity", "meter"],
-    answer:
-      "Brief Group Energy Monitoring helps teams track power usage, verify consumption, compare sites, and identify abnormal energy patterns from the dashboard.",
-  },
-  {
-    keywords: ["farm", "farming", "crop", "soil", "irrigation", "weather"],
-    answer:
-      "Smart Farm Prediction combines weather, crop-health, soil-moisture, irrigation, and yield-risk signals so farm operators can make better planting and field decisions.",
-  },
-  {
-    keywords: ["fault", "machine", "maintenance", "failure", "risk"],
-    answer:
-      "AI Fault Detection ranks machine and infrastructure risks before downtime happens. It gives teams confidence scores and practical maintenance actions.",
-  },
-  {
-    keywords: ["report", "reports", "automated", "pdf", "summary"],
-    answer:
-      "Automated Reports turn energy, farm, fault, and inspection signals into readable summaries for managers, operators, and pilot customers.",
-  },
-  {
-    keywords: ["inspection", "vision", "image", "camera", "upload", "photo"],
-    answer:
-      "Computer Vision Inspection lets users upload images or PDFs, queue evidence for inspection, and attach findings to operational records.",
-  },
-  {
-    keywords: ["marketplace", "shop", "equipment", "buy", "sell"],
-    answer:
-      "The Digital Marketplace is marked Coming Soon. It is planned for trusted energy equipment, smart farm tools, services, and partner listings after the pilot phase.",
-  },
-  {
-    keywords: ["contact", "email", "phone", "call", "support", "customer care"],
-    answer:
-      "You can contact Brief Group by email at briefgroup1@gmail.com or by phone/WhatsApp on +2348152158339.",
-  },
-  {
-    keywords: ["login", "account", "sign up", "signup", "dashboard"],
-    answer:
-      "Users can create an account from the Login page, then access the protected dashboard to use Brief Group pilot tools.",
-  },
-];
-
-function answerQuestion(question: string) {
-  const normalized = question.toLowerCase();
-  const match = knowledgeBase.find((entry) =>
-    entry.keywords.some((keyword) => normalized.includes(keyword)),
-  );
-
-  if (match) return match.answer;
-
-  return "I can help with Brief Group services, Energy Monitoring, Smart Farm Prediction, AI Fault Detection, Automated Reports, Computer Vision Inspection, Digital Marketplace, dashboard access, and contact details. For direct help, email briefgroup1@gmail.com or call +2348152158339.";
-}
-
 export default function CustomerCarePage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      text: "Hello, I am the Brief Group customer care assistant. Ask me about our platform, pilot program, dashboard, services, or how to contact the team.",
+      text: "Hello, I am BriefGroup AI. Ask me about our platform, pilot program, dashboard, services, or how to reach the team.",
     },
   ]);
   const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [saveWarning, setSaveWarning] = useState("");
 
   const latestTopic = useMemo(() => {
     const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
     return lastUserMessage?.text || "Brief Group support";
   }, [messages]);
 
-  function sendMessage(message = input) {
+  async function sendMessage(message = input) {
     const question = message.trim();
-    if (!question) return;
+    if (!question || isSending) return;
 
-    setMessages((current) => [
-      ...current,
-      { role: "user", text: question },
-      { role: "assistant", text: answerQuestion(question) },
-    ]);
+    setMessages((current) => [...current, { role: "user", text: question }]);
     setInput("");
+    setIsSending(true);
+    setSaveWarning("");
+
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: "general", message: question }),
+      });
+      const result = (await response.json()) as {
+        reply?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(result.error || "Please try again in a moment.");
+      }
+
+      const reply =
+        result.reply || "I couldn't prepare a reply. Please try again.";
+      setMessages((current) => [...current, { role: "assistant", text: reply }]);
+
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await addDoc(collection(db, "aiInteractions"), {
+            ownerId: user.uid,
+            domain: "general",
+            prompt: question,
+            reply,
+            createdAt: serverTimestamp(),
+          });
+        } catch {
+          setSaveWarning(
+            "Your answer is ready, but we could not save this conversation to your account.",
+          );
+        }
+      }
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          text:
+            error instanceof Error
+              ? error.message
+              : "I couldn't reach BriefGroup AI. Please try again or contact our team.",
+        },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
   }
 
   return (
@@ -125,7 +123,7 @@ export default function CustomerCarePage() {
           </Link>
           <Link
             href="/login"
-            className="rounded-lg bg-[#102027] px-5 py-3 text-sm font-semibold text-white"
+            className="rounded-lg bg-emerald-700 px-5 py-3 text-sm font-semibold text-white"
           >
             Launch Dashboard
           </Link>
@@ -140,7 +138,7 @@ export default function CustomerCarePage() {
         >
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">
             <Bot className="h-4 w-4" />
-            AI customer care
+            BriefGroup AI
           </span>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight md:text-6xl">
             Ask Brief Group anything.
@@ -168,11 +166,13 @@ export default function CustomerCarePage() {
             </a>
           </div>
 
-          <div className="mt-8 rounded-lg bg-[#102027] p-5 text-white">
-            <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">
+          <div className="mt-8 rounded-2xl bg-emerald-50 p-5 text-slate-800">
+            <p className="text-sm uppercase tracking-[0.2em] text-emerald-800">
               Current topic
             </p>
-            <p className="mt-3 text-lg font-semibold">{latestTopic}</p>
+            <p className="mt-3 text-lg font-semibold text-slate-900">
+              {latestTopic}
+            </p>
           </div>
         </motion.aside>
 
@@ -189,8 +189,8 @@ export default function CustomerCarePage() {
                 <MessageCircle className="h-5 w-5" />
               </span>
               <div>
-                <h2 className="font-semibold">Brief Group Assistant</h2>
-                <p className="text-sm text-slate-500">Online now</p>
+                <h2 className="font-semibold">BriefGroup AI</h2>
+                <p className="text-sm text-slate-500">Here to help</p>
               </div>
             </div>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
@@ -214,7 +214,7 @@ export default function CustomerCarePage() {
                 <div
                   className={`max-w-[82%] rounded-lg px-4 py-3 text-sm leading-6 ${
                     message.role === "user"
-                      ? "bg-[#102027] text-white"
+                      ? "bg-emerald-700 text-white"
                       : "bg-slate-100 text-slate-800"
                   }`}
                 >
@@ -230,35 +230,52 @@ export default function CustomerCarePage() {
           </div>
 
           <div className="border-t border-slate-100 bg-white/80 p-5">
+            {saveWarning && (
+              <p
+                role="status"
+                className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"
+              >
+                {saveWarning}
+              </p>
+            )}
             <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
               {quickQuestions.map((question) => (
                 <button
                   key={question}
+                  type="button"
+                  disabled={isSending}
                   onClick={() => sendMessage(question)}
-                  className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-emerald-300 hover:text-emerald-800"
+                  className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-emerald-300 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {question}
                 </button>
               ))}
             </div>
             <div className="flex gap-3">
-              <input
-                aria-label="Ask Brief Group customer care a question"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") sendMessage();
+              <form
+                className="flex w-full gap-3"
+                onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                  event.preventDefault();
+                  void sendMessage();
                 }}
-                placeholder="Type your question here..."
-                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-emerald-400"
-              />
-              <button
-                onClick={() => sendMessage()}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-white transition hover:bg-emerald-600"
               >
-                <Send className="h-4 w-4" />
-                Send
-              </button>
+                <input
+                  aria-label="Ask Brief Group customer care a question"
+                  value={input}
+                  maxLength={1200}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder="Type your question here..."
+                  className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-emerald-400"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isSending}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                  {isSending ? "Sending" : "Send"}
+                </button>
+              </form>
             </div>
           </div>
         </motion.section>
@@ -283,7 +300,7 @@ export default function CustomerCarePage() {
 
         <Link
           href="/contact"
-          className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#102027] px-5 py-3 font-semibold text-white"
+          className="mt-8 inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white"
         >
           Go to Contact page
           <ArrowRight className="h-4 w-4" />

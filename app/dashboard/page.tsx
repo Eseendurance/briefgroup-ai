@@ -1,800 +1,768 @@
 "use client";
 
 import {
-  Activity,
-  AlertTriangle,
-  Bell,
-  Building2,
-  Camera,
-  CheckCircle2,
-  ChevronRight,
-  CloudSun,
-  Cpu,
-  Droplets,
-  FileText,
-  Gauge,
-  LogOut,
-  ShieldCheck,
-  ShoppingCart,
-  Sprout,
-  TrendingUp,
-  UploadCloud,
-  Zap,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+  addDoc,
+  collection,
+  doc,
+  type DocumentData,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
+import { deleteObject, ref, uploadBytes } from "firebase/storage";
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+  Activity,
+  ArrowRight,
+  Bot,
+  CheckCircle2,
+  CloudSun,
+  FileText,
+  Heart,
+  LoaderCircle,
+  LogOut,
+  MapPin,
+  ShieldCheck,
+  UploadCloud,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  type ChangeEvent,
+  type FormEvent,
+  useEffect,
+  useState,
+} from "react";
 import { ProtectedRoute, useAuth } from "@/app/lib/auth";
+import { db, storage } from "@/app/lib/firebase";
 
-const sites = [
-  {
-    name: "Lagos Main Facility",
-    location: "Lagos, Nigeria",
-    status: "Online",
-    capacity: "500 kW",
-    output: 320,
-    devices: 12,
-    health: 92,
-  },
-  {
-    name: "Abuja Data Center",
-    location: "Abuja, Nigeria",
-    status: "Online",
-    capacity: "750 kW",
-    output: 580,
-    devices: 8,
-    health: 88,
-  },
-  {
-    name: "Port Harcourt Plant",
-    location: "Port Harcourt, Nigeria",
-    status: "Maintenance",
-    capacity: "300 kW",
-    output: 0,
-    devices: 5,
-    health: 61,
-  },
-];
-
-const energyData = [
-  { label: "Jan", consumption: 44, verified: 38, forecast: 42 },
-  { label: "Feb", consumption: 58, verified: 51, forecast: 55 },
-  { label: "Mar", consumption: 49, verified: 46, forecast: 52 },
-  { label: "Apr", consumption: 72, verified: 63, forecast: 68 },
-  { label: "May", consumption: 64, verified: 59, forecast: 66 },
-  { label: "Jun", consumption: 61, verified: 58, forecast: 63 },
-];
-
-const farmData = [
-  { label: "Mon", moisture: 64, cropHealth: 88, irrigation: 42 },
-  { label: "Tue", moisture: 61, cropHealth: 87, irrigation: 48 },
-  { label: "Wed", moisture: 58, cropHealth: 84, irrigation: 56 },
-  { label: "Thu", moisture: 67, cropHealth: 89, irrigation: 37 },
-  { label: "Fri", moisture: 72, cropHealth: 91, irrigation: 28 },
-  { label: "Sat", moisture: 69, cropHealth: 90, irrigation: 31 },
-];
-
-const faultSignals = [
-  {
-    asset: "Inverter Bank A",
-    risk: "Medium",
-    confidence: 82,
-    action: "Inspect thermal readings within 24 hours.",
-  },
-  {
-    asset: "Transformer TX-04",
-    risk: "High",
-    confidence: 91,
-    action: "Schedule load balance and oil temperature review.",
-  },
-  {
-    asset: "Server Rack UPS",
-    risk: "Low",
-    confidence: 74,
-    action: "Continue predictive monitoring.",
-  },
-];
-
-const reports = [
-  "Daily energy verification summary",
-  "Smart farming crop and irrigation advisory",
-  "Weekly site performance report",
-  "Fault risk and maintenance actions",
-  "Inspection evidence and compliance record",
-];
-
-const moduleAccents: Record<ModuleId, string> = {
-  energy: "from-yellow-200 to-emerald-300",
-  farming: "from-lime-200 to-emerald-300",
-  fault: "from-rose-300 to-amber-200",
-  reports: "from-amber-200 to-emerald-300",
-  inspections: "from-fuchsia-300 to-emerald-300",
-  marketplace: "from-amber-200 to-orange-300",
-};
-
-const modules = [
-  { id: "energy", label: "Energy Monitoring", icon: Zap },
-  { id: "farming", label: "Smart Farm Prediction", icon: Sprout },
-  { id: "fault", label: "AI Fault Detection", icon: Cpu },
-  { id: "reports", label: "Automated Reports", icon: FileText },
-  { id: "inspections", label: "Computer Vision Inspection", icon: Camera },
-  { id: "marketplace", label: "Digital Marketplace", icon: ShoppingCart },
-] as const;
-
-type ModuleId = (typeof modules)[number]["id"];
 type Report = {
   operationalScore: number;
   status: string;
   summary: string;
   recommendations: string[];
-};
-type InspectionResult = {
-  inspectionId: string;
-  status: string;
-  risk: string;
-  engine: string;
+  createdAt?: { toMillis?: () => number };
 };
 
-function StatCard({
-  label,
-  value,
-  detail,
-  icon: Icon,
-  tone = "emerald",
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  icon: typeof Activity;
-  tone?: "emerald" | "cyan" | "amber" | "rose";
-}) {
-  const tones = {
-    emerald: "border-emerald-300/15 bg-emerald-300/10 text-emerald-100",
-    cyan: "border-cyan-200/15 bg-cyan-300/10 text-cyan-100",
-    amber: "border-amber-200/15 bg-amber-300/10 text-amber-100",
-    rose: "border-rose-200/15 bg-rose-300/10 text-rose-100",
+type WeatherSummary = {
+  temperature?: number;
+  humidity?: number;
+  precipitation?: number;
+  windSpeed?: number;
+};
+
+const reportFields = [
+  { key: "energyLoad", label: "Energy load (%)" },
+  { key: "machineHealth", label: "Equipment health (%)" },
+  { key: "rainfallRisk", label: "Rainfall exposure (%)" },
+] as const;
+
+function asReport(data: DocumentData): Report | null {
+  if (
+    typeof data.operationalScore !== "number" ||
+    typeof data.status !== "string" ||
+    typeof data.summary !== "string" ||
+    !Array.isArray(data.recommendations) ||
+    !data.recommendations.every((item: unknown) => typeof item === "string")
+  ) {
+    return null;
+  }
+
+  return {
+    operationalScore: data.operationalScore,
+    status: data.status,
+    summary: data.summary,
+    recommendations: data.recommendations,
+    createdAt: data.createdAt,
   };
-
-  return (
-    <article className="group relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.055] p-5 shadow-2xl backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-white/20">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-white/60">{label}</p>
-          <p className="mt-2 text-3xl font-semibold">{value}</p>
-          <p className="mt-3 text-sm text-white/55">{detail}</p>
-        </div>
-        <div className={`rounded-lg border p-3 ${tones[tone]}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function Panel({
-  title,
-  children,
-  action,
-}: {
-  title: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-}) {
-  return (
-    <section className="relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.055] p-5 shadow-2xl backdrop-blur-xl">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-200/35 to-transparent" />
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
 }
 
 function DashboardContent() {
   const { user, logout } = useAuth();
-  const [activeModule, setActiveModule] = useState<ModuleId>("energy");
-  const [weather, setWeather] = useState("Loading");
   const [report, setReport] = useState<Report | null>(null);
-  const [inspection, setInspection] = useState<InspectionResult | null>(null);
-  const [uploadName, setUploadName] = useState("Choose an image or PDF");
+  const [reports, setReports] = useState<Report[]>([]);
+  const [weather, setWeather] = useState<WeatherSummary | null>(null);
+  const [latitude, setLatitude] = useState("6.5244");
+  const [longitude, setLongitude] = useState("3.3792");
+  const [healthHubEnabled, setHealthHubEnabled] = useState(false);
+  const [reportInputs, setReportInputs] = useState({
+    energyLoad: "62",
+    machineHealth: "84",
+    rainfallRisk: "31",
+    inspectionFindings: "",
+  });
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSavingPreference, setIsSavingPreference] = useState(false);
+  const [uploadedName, setUploadedName] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const stats = useMemo(
-    () => [
-      {
-        label: "Operational Score",
-        value: report ? `${report.operationalScore}%` : "Pilot",
-        detail: report?.status ?? "Live AI report engine",
-        icon: Gauge,
-        tone: "emerald" as const,
-      },
-      {
-        label: "Weather Intelligence",
-        value: weather,
-        detail: "Live climate signal for field operations",
-        icon: CloudSun,
-        tone: "cyan" as const,
-      },
-      {
-        label: "Farm Intelligence",
-        value: "91%",
-        detail: "Crop health and irrigation readiness",
-        icon: Sprout,
-        tone: "emerald" as const,
-      },
-      {
-        label: "Sites Online",
-        value: "2 / 3",
-        detail: "Remote energy and inspection locations",
-        icon: Building2,
-        tone: "amber" as const,
-      },
-      {
-        label: "Security",
-        value: "Protected",
-        detail: "Firebase auth, route guard, and API limits",
-        icon: ShieldCheck,
-        tone: "rose" as const,
-      },
-    ],
-    [report, weather],
-  );
+  async function requestHeaders() {
+    if (!user) throw new Error("Please sign in again to continue.");
+    return {
+      Authorization: `Bearer ${await user.getIdToken()}`,
+      "Content-Type": "application/json",
+    };
+  }
 
-  useEffect(() => {
-    async function loadPilotData() {
-      if (!user) return;
+  async function loadWeather(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    const lat = Number(latitude);
+    const lon = Number(longitude);
 
-      const token = await user.getIdToken();
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      };
-
-      const [weatherResponse, reportResponse] = await Promise.all([
-        fetch("/api/weather", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ latitude: 6.5244, longitude: 3.3792 }),
-        }),
-        fetch("/api/reports", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            energyLoad: 62,
-            machineHealth: 84,
-            rainfallRisk: 31,
-          }),
-        }),
-      ]);
-
-      if (weatherResponse.ok) {
-        const payload = await weatherResponse.json();
-        const temperature = payload.weather?.current?.temperature_2m;
-        setWeather(`${Math.round(temperature)}C live`);
-      } else {
-        setWeather("Retry");
-      }
-
-      if (reportResponse.ok) {
-        setReport(await reportResponse.json());
-      }
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      setError("Latitude must be between -90 and 90.");
+      return;
+    }
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+      setError("Longitude must be between -180 and 180.");
+      return;
     }
 
-    loadPilotData().catch(() => setWeather("Offline"));
-  }, [user]);
+    setError("");
+    setIsLoadingWeather(true);
+    try {
+      const response = await fetch("/api/weather", {
+        method: "POST",
+        headers: await requestHeaders(),
+        body: JSON.stringify({ latitude: lat, longitude: lon }),
+      });
+      const result = (await response.json()) as {
+        weather?: {
+          current?: {
+            temperature_2m?: number;
+            relative_humidity_2m?: number;
+            precipitation?: number;
+            wind_speed_10m?: number;
+          };
+        };
+        error?: string;
+      };
 
-  async function handleInspection(file: File | null) {
-    if (!file || !user) return;
+      if (!response.ok || !result.weather?.current) {
+        throw new Error(result.error || "Weather data is not available right now.");
+      }
 
-    setUploadName(file.name);
-    const token = await user.getIdToken();
-    const response = await fetch("/api/inspections", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        fileName: file.name,
-        fileSize: file.size,
-        category: "computer",
-      }),
-    });
-
-    if (response.ok) {
-      setInspection(await response.json());
+      setWeather({
+        temperature: result.weather.current.temperature_2m,
+        humidity: result.weather.current.relative_humidity_2m,
+        precipitation: result.weather.current.precipitation,
+        windSpeed: result.weather.current.wind_speed_10m,
+      });
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "We could not load weather for those coordinates.",
+      );
+    } finally {
+      setIsLoadingWeather(false);
     }
   }
 
-  const activeLabel =
-    modules.find((item) => item.id === activeModule)?.label ?? "Dashboard";
-  const activeAccent = moduleAccents[activeModule];
+  async function loadSavedData() {
+    if (!user) return;
+    const profile = await getDoc(doc(db, "users", user.uid));
+    setHealthHubEnabled(profile.data()?.enableHealthHub === true);
+
+    const savedReports = await getDocs(
+      query(
+        collection(db, "reports"),
+        where("ownerId", "==", user.uid),
+        limit(10),
+      ),
+    );
+    const loadedReports = savedReports.docs
+      .map((snapshot) => asReport(snapshot.data()))
+      .filter((item): item is Report => item !== null)
+      .sort(
+        (left, right) =>
+          (right.createdAt?.toMillis?.() ?? 0) -
+          (left.createdAt?.toMillis?.() ?? 0),
+      );
+    setReports(loadedReports);
+    setReport(loadedReports[0] ?? null);
+  }
+
+  useEffect(() => {
+    if (!user) return;
+
+    const timer = window.setTimeout(() => {
+      void Promise.all([loadSavedData(), loadWeather()]).catch(
+        (loadError: unknown) => {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "We could not load your workspace information.",
+          );
+        },
+      );
+    }, 0);
+    // Load once per signed-in account; the user can refresh weather on demand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => window.clearTimeout(timer);
+  }, [user]);
+
+  async function generateReport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!user) return;
+
+    const input = {
+      energyLoad: Number(reportInputs.energyLoad),
+      machineHealth: Number(reportInputs.machineHealth),
+      rainfallRisk: Number(reportInputs.rainfallRisk),
+      inspectionFindings: reportInputs.inspectionFindings.trim(),
+    };
+    if (
+      [input.energyLoad, input.machineHealth, input.rainfallRisk].some(
+        (value) => !Number.isFinite(value) || value < 0 || value > 100,
+      )
+    ) {
+      setError("Signal values must be between 0 and 100.");
+      return;
+    }
+
+    setError("");
+    setNotice("");
+    setIsGeneratingReport(true);
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: await requestHeaders(),
+        body: JSON.stringify(input),
+      });
+      const result = (await response.json()) as Report & { error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || "We could not create that report.");
+      }
+
+      const reportToSave = { ...result, ownerId: user.uid };
+      await addDoc(collection(db, "reports"), {
+        ...reportToSave,
+        createdAt: serverTimestamp(),
+      });
+      setReport(result);
+      setReports((current) => [result, ...current].slice(0, 10));
+      setNotice("Your operational summary is ready and saved to your account.");
+    } catch (reportError) {
+      setError(
+        reportError instanceof Error
+          ? reportError.message
+          : "We could not save your operational summary.",
+      );
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }
+
+  async function uploadInspection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      setError("Please choose an image or PDF file.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Inspection files must be smaller than 10 MB.");
+      return;
+    }
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-100);
+    const storagePath = `inspections/${user.uid}/${crypto.randomUUID()}-${safeName}`;
+    const fileRef = ref(storage, storagePath);
+    setError("");
+    setNotice("");
+    setIsUploading(true);
+
+    try {
+      await uploadBytes(fileRef, file, { contentType: file.type });
+      try {
+        await addDoc(collection(db, "inspections"), {
+          ownerId: user.uid,
+          fileName: file.name,
+          storagePath,
+          fileSize: file.size,
+          contentType: file.type,
+          status: "stored",
+          createdAt: serverTimestamp(),
+        });
+      } catch (saveError) {
+        await deleteObject(fileRef);
+        throw saveError;
+      }
+      setUploadedName(file.name);
+      setNotice("Inspection evidence was uploaded and saved to your account.");
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "We could not upload that file. Please try again.",
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function toggleHealthHub() {
+    if (!user || isSavingPreference) return;
+    const enabled = !healthHubEnabled;
+    setError("");
+    setIsSavingPreference(true);
+    try {
+      await setDoc(
+        doc(db, "users", user.uid),
+        { enableHealthHub: enabled, safetyReminders: enabled },
+        { merge: true },
+      );
+      setHealthHubEnabled(enabled);
+      setNotice(
+        enabled
+          ? "Optional wellbeing reminders are on for this account."
+          : "Optional wellbeing reminders are off.",
+      );
+    } catch (preferenceError) {
+      setError(
+        preferenceError instanceof Error
+          ? preferenceError.message
+          : "We could not save that preference.",
+      );
+    } finally {
+      setIsSavingPreference(false);
+    }
+  }
+
+  const displayName =
+    user?.displayName?.trim() || user?.email?.split("@")[0] || "there";
 
   return (
-    <main className="brief-grid min-h-screen bg-[#040908] text-white">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(52,211,153,0.18),transparent_28%),radial-gradient(circle_at_90%_0%,rgba(103,232,249,0.12),transparent_30%),radial-gradient(circle_at_65%_80%,rgba(251,191,36,0.10),transparent_34%)]" />
-      <div className="relative flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-[#030806]/85 p-4 backdrop-blur-xl lg:block">
-          <div className="flex items-center gap-3 px-2 py-4">
+    <main className="min-h-screen bg-slate-50 text-slate-800">
+      <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3">
+          <Link href="/" className="flex items-center gap-3">
             <Image
               src="/brief-group-logo.svg"
-              alt="Brief Group logo"
-              width={48}
-              height={48}
-              className="h-12 w-12 rounded-lg object-cover"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-xl"
             />
             <div>
-              <p className="font-semibold">Brief Group</p>
-              <p className="text-xs text-white/50">Infrastructure OS</p>
+              <p className="font-semibold text-slate-900">Brief Group</p>
+              <p className="text-xs text-slate-500">Your operations workspace</p>
             </div>
+          </Link>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden max-w-52 truncate text-sm text-slate-500 sm:block">
+              {user?.email}
+            </span>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              Sign out
+            </button>
           </div>
+        </div>
+      </header>
 
-          <div className="mx-2 mt-4 rounded-lg border border-white/10 bg-white/[0.045] p-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-              Pilot Network
+      <div className="mx-auto max-w-7xl px-5 py-8 sm:py-10">
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+        >
+          <div>
+            <p className="text-sm font-medium text-emerald-800">
+              Your pilot workspace
             </p>
-            <div className="mt-3 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-300 brief-pulse" />
-              <span className="text-sm text-emerald-100">
-                3 sites connected
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              Welcome, {displayName}.
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">
+              A clearer view of your work, with your team in control.
+            </p>
+          </div>
+          <Link
+            href="/customer-care"
+            className="inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-800 sm:self-auto"
+          >
+            <Bot className="h-4 w-4" aria-hidden="true" />
+            Ask BriefGroup AI
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </motion.section>
+
+        <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+          Start with the signals you provide. No live equipment or farm sensors
+          are connected to this workspace yet.
+        </p>
+
+        {(error || notice) && (
+          <div
+            role={error ? "alert" : "status"}
+            className={`mt-4 rounded-xl px-4 py-3 text-sm leading-6 ${
+              error
+                ? "bg-rose-50 text-rose-800"
+                : "bg-emerald-50 text-emerald-900"
+            }`}
+          >
+            {error || notice}
+          </div>
+        )}
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <CloudSun className="h-4 w-4 text-sky-700" aria-hidden="true" />
+                  Local weather
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Live forecast from Open-Meteo for the coordinates you choose.
+                </p>
+              </div>
+              <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800">
+                Live data
               </span>
             </div>
-          </div>
-
-          <nav className="mt-6 space-y-1">
-            {modules.map((item) => (
+            <form
+              className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+              onSubmit={(event) => void loadWeather(event)}
+            >
+              <label className="text-xs font-medium text-slate-600">
+                Latitude
+                <input
+                  value={latitude}
+                  onChange={(event) => setLatitude(event.target.value)}
+                  inputMode="decimal"
+                  className="mt-1 block min-h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 outline-none focus:border-emerald-500"
+                />
+              </label>
+              <label className="text-xs font-medium text-slate-600">
+                Longitude
+                <input
+                  value={longitude}
+                  onChange={(event) => setLongitude(event.target.value)}
+                  inputMode="decimal"
+                  className="mt-1 block min-h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 outline-none focus:border-emerald-500"
+                />
+              </label>
               <button
-                key={item.id}
-                onClick={() => setActiveModule(item.id)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition ${
-                  activeModule === item.id
-                    ? "bg-white text-[#06110f]"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
+                type="submit"
+                disabled={isLoadingWeather}
+                className="mt-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
               >
-                <item.icon className="h-5 w-5" />
-                {item.label}
+                {isLoadingWeather ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <MapPin className="h-4 w-4" aria-hidden="true" />
+                )}
+                Check
               </button>
-            ))}
-          </nav>
-        </aside>
+            </form>
+            {weather ? (
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  ["Temperature", weather.temperature, " C"],
+                  ["Humidity", weather.humidity, "%"],
+                  ["Rainfall", weather.precipitation, " mm"],
+                  ["Wind", weather.windSpeed, " km/h"],
+                ].map(([label, value, unit]) => (
+                  <div key={String(label)} className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">{label}</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {typeof value === "number" ? `${value}${unit}` : "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                {isLoadingWeather
+                  ? "Loading current weather..."
+                  : "Enter coordinates and check for current conditions."}
+              </div>
+            )}
+          </section>
 
-        <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 border-b border-white/10 bg-[#040908]/85 backdrop-blur-xl">
-            <div className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className={`bg-gradient-to-r ${activeAccent} bg-clip-text text-xs uppercase tracking-[0.24em] text-transparent`}>
-                  Launch Dashboard / Pilot Mission Control
+                <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <ShieldCheck className="h-4 w-4 text-emerald-700" aria-hidden="true" />
+                  Account and privacy
                 </p>
-                <h1 className="mt-1 text-2xl font-semibold md:text-4xl">
-                  {activeLabel}
-                </h1>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Signed in with Firebase Authentication. We have not connected
+                  any organization sensors.
+                </p>
               </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button className="relative rounded-lg border border-white/10 bg-white/[0.05] p-3 text-white/75">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-300" />
-                </button>
-                <div className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white/70">
-                  {user?.email}
-                </div>
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-3 text-sm text-white/80 transition hover:bg-white/10"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto border-t border-white/10 px-5 py-3 lg:hidden">
-              {modules.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveModule(item.id)}
-                  className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                    activeModule === item.id
-                      ? "bg-white text-[#06110f]"
-                      : "bg-white/[0.06] text-white/70"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </header>
-
-          <div className="px-5 py-6">
-            <div className="mb-5 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-              {stats.map((item) => (
-                <StatCard key={item.label} {...item} />
-              ))}
-            </div>
-
-            {activeModule === "energy" ? <EnergyModule /> : null}
-            {activeModule === "farming" ? <FarmingModule /> : null}
-            {activeModule === "fault" ? <FaultModule /> : null}
-            {activeModule === "reports" ? <ReportsModule report={report} /> : null}
-            {activeModule === "inspections" ? (
-              <InspectionsModule
-                handleInspection={handleInspection}
-                inspection={inspection}
-                uploadName={uploadName}
+              <CheckCircle2
+                className="h-5 w-5 shrink-0 text-emerald-700"
+                aria-hidden="true"
               />
-            ) : null}
-            {activeModule === "marketplace" ? <MarketplaceModule /> : null}
+            </div>
+            <Link
+              href="/contact"
+              className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-800 hover:text-emerald-900"
+            >
+              Discuss pilot security requirements
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </section>
+        </div>
+
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                <FileText className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="font-semibold text-slate-900">
+                  Create an operations summary
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  A transparent score from the values you enter - not a
+                  connection to unconfigured sensors.
+                </p>
+              </div>
+            </div>
+            <form className="mt-5 space-y-3" onSubmit={generateReport}>
+              {reportFields.map(({ key, label }) => (
+                <label
+                  key={key}
+                  className="flex items-center justify-between gap-4 text-sm text-slate-700"
+                >
+                  {label}
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={reportInputs[key]}
+                    onChange={(event) =>
+                      setReportInputs((current) => ({
+                        ...current,
+                        [key]: event.target.value,
+                      }))
+                    }
+                    className="min-h-10 w-24 rounded-lg border border-slate-200 px-3 text-right text-slate-900 outline-none focus:border-emerald-500"
+                  />
+                </label>
+              ))}
+              <label className="block text-sm text-slate-700">
+                Optional inspection note
+                <textarea
+                  maxLength={500}
+                  rows={2}
+                  value={reportInputs.inspectionFindings}
+                  onChange={(event) =>
+                    setReportInputs((current) => ({
+                      ...current,
+                      inspectionFindings: event.target.value,
+                    }))
+                  }
+                  className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                  placeholder="A brief note to include"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={isGeneratingReport}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-60"
+              >
+                {isGeneratingReport && (
+                  <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                )}
+                {isGeneratingReport ? "Preparing summary..." : "Create and save summary"}
+              </button>
+            </form>
+            {report && (
+              <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
+                <p className="font-semibold text-slate-900">
+                  Operations score: {report.operationalScore}% - {report.status}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  {report.summary}
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {report.recommendations.map((recommendation) => (
+                    <li
+                      key={recommendation}
+                      className="flex gap-2 text-sm leading-5 text-slate-700"
+                    >
+                      <CheckCircle2
+                        className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"
+                        aria-hidden="true"
+                      />
+                      {recommendation}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="mt-4 text-xs leading-5 text-slate-500">
+              Summaries are rule-based planning aids, not certified engineering,
+              agricultural, or safety assessments.
+            </p>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
+                <UploadCloud className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="font-semibold text-slate-900">
+                  Save inspection evidence
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Upload a private image or PDF to your Firebase Storage account.
+                  It is stored for review, not automatically analyzed.
+                </p>
+              </div>
+            </div>
+            <label className="mt-5 flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center transition hover:border-emerald-500 hover:bg-emerald-50/40">
+              {isUploading ? (
+                <LoaderCircle
+                  className="h-8 w-8 animate-spin text-emerald-700"
+                  aria-hidden="true"
+                />
+              ) : (
+                <UploadCloud
+                  className="h-8 w-8 text-emerald-700"
+                  aria-hidden="true"
+                />
+              )}
+              <span className="mt-3 text-sm font-semibold text-slate-800">
+                {isUploading ? "Uploading securely..." : "Choose an image or PDF"}
+              </span>
+              <span className="mt-1 text-xs text-slate-500">
+                Maximum 10 MB
+              </span>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                disabled={isUploading}
+                onChange={(event) => void uploadInspection(event)}
+                className="sr-only"
+              />
+            </label>
+            {uploadedName && (
+              <p className="mt-3 flex items-center gap-2 text-sm text-emerald-800">
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                {uploadedName} saved
+              </p>
+            )}
+          </section>
+        </div>
+
+        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
+                <Heart className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="font-semibold text-slate-900">
+                  BriefCare Shield
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                  Optional, general wellbeing reminders. Your choice is saved
+                  with your user profile; no health details are collected.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={healthHubEnabled}
+              disabled={isSavingPreference}
+              onClick={() => void toggleHealthHub()}
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition disabled:opacity-60 ${
+                healthHubEnabled ? "bg-emerald-700" : "bg-slate-300"
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  healthHubEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+              <span className="sr-only">
+                {healthHubEnabled ? "Turn off" : "Turn on"} BriefCare Shield
+              </span>
+            </button>
           </div>
+          {healthHubEnabled && (
+            <div className="mt-5 grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-3">
+              {[
+                "Take a short water break after outdoor work.",
+                "Try a gentle wrist and shoulder stretch between tasks.",
+                "Pause and follow your team's heat and safety procedures.",
+              ].map((tip) => (
+                <div
+                  key={tip}
+                  className="flex gap-2 rounded-xl bg-slate-50 p-3 text-sm leading-5 text-slate-700"
+                >
+                  <Activity
+                    className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"
+                    aria-hidden="true"
+                  />
+                  {tip}
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-4 text-xs leading-5 text-slate-500">
+            These prompts are not medical or occupational safety advice. Use
+            qualified guidance and your organization&apos;s safety procedures.
+          </p>
+        </section>
+
+        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="font-semibold text-slate-900">Recent summaries</h2>
+          {reports.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">
+              Your saved operations summaries will appear here.
+            </p>
+          ) : (
+            <ul className="mt-3 divide-y divide-slate-100">
+              {reports.map((savedReport, index) => (
+                <li
+                  key={`${savedReport.createdAt?.toMillis?.() ?? index}-${index}`}
+                  className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <p className="text-sm text-slate-700">
+                    {savedReport.summary}
+                  </p>
+                  <span className="shrink-0 text-xs font-medium text-emerald-800">
+                    {savedReport.operationalScore}% - {savedReport.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </main>
   );
 }
 
-function EnergyChart() {
-  return (
-    <Panel title="Energy Verification Trend">
-      <div className="h-80 min-h-80">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <AreaChart data={energyData}>
-            <defs>
-              <linearGradient id="consumption" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="5%" stopColor="#34d399" stopOpacity={0.7} />
-                <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-            <XAxis dataKey="label" stroke="rgba(255,255,255,0.55)" />
-            <YAxis stroke="rgba(255,255,255,0.55)" />
-            <Tooltip
-              contentStyle={{
-                background: "#07110f",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 8,
-              }}
-            />
-            <Area
-              dataKey="consumption"
-              fill="url(#consumption)"
-              stroke="#34d399"
-              strokeWidth={3}
-              type="monotone"
-            />
-            <Line dataKey="verified" stroke="#67e8f9" strokeWidth={2} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </Panel>
-  );
-}
-
-function PilotReport({ report }: { report: Report | null }) {
-  return (
-    <Panel title="Automated Report">
-      <p className="text-sm leading-6 text-white/65">
-        {report?.summary ?? "Generating the current pilot report."}
-      </p>
-      <div className="mt-5 space-y-3">
-        {(report?.recommendations ?? reports).map((item) => (
-          <div key={item} className="rounded-lg bg-black/25 p-3 text-sm text-white/70">
-            {item}
-          </div>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function SignalRibbon({
-  title,
-  detail,
-  items,
-}: {
-  title: string;
-  detail: string;
-  items: string[];
-}) {
-  return (
-    <section className="overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(120deg,rgba(255,255,255,0.075),rgba(255,255,255,0.025))] p-5 shadow-2xl backdrop-blur-xl">
-      <div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
-        <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/60">
-            Brief signal layer
-          </p>
-          <h2 className="mt-2 text-3xl font-semibold">{title}</h2>
-          <p className="mt-3 text-sm leading-6 text-white/60">{detail}</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-4">
-          {items.map((item, index) => (
-            <div
-              key={item}
-              className="relative rounded-lg border border-white/10 bg-black/25 p-4"
-            >
-              <span className="text-xs text-white/35">0{index + 1}</span>
-              <p className="mt-4 text-sm font-medium">{item}</p>
-              <div className="mt-4 h-1 rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-cyan-200"
-                  style={{ width: `${68 + index * 8}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function EnergyModule() {
-  return (
-    <div className="space-y-5">
-      <SignalRibbon
-        title="Smart Energy I&V"
-        detail="Verify consumption, detect leakage, and turn meter evidence into client-ready proof."
-        items={["Meter integrity", "Usage anomaly", "Tariff impact", "Site confidence"]}
-      />
-      <div className="grid gap-5 md:grid-cols-3">
-        <StatCard label="Verified Energy" value="58 MWh" detail="Current pilot month" icon={Zap} />
-        <StatCard label="Cost Avoidance" value="NGN 4.8M" detail="Estimated from anomaly reduction" icon={TrendingUp} />
-        <StatCard label="Data Quality" value="96%" detail="Meter and site signal coverage" icon={CheckCircle2} />
-      </div>
-      <EnergyChart />
-      <Panel title="Smart Energy Inspection & Verification">
-        <div className="grid gap-4 md:grid-cols-3">
-          {sites.map((site) => (
-            <div key={site.name} className="rounded-lg border border-white/10 bg-black/20 p-4">
-              <p className="font-semibold">{site.name}</p>
-              <p className="mt-1 text-sm text-white/50">{site.location}</p>
-              <div className="mt-4 h-2 rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-emerald-300"
-                  style={{ width: `${site.health}%` }}
-                />
-              </div>
-              <p className="mt-3 text-sm text-white/60">{site.health}% verification confidence</p>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
-  );
-}
-
-function FarmingModule() {
-  return (
-    <div className="space-y-5">
-      <SignalRibbon
-        title="Smart Farming Intelligence"
-        detail="Turn weather, soil, crop, and irrigation signals into practical planting and farm performance decisions."
-        items={["Soil moisture", "Crop stress", "Irrigation timing", "Yield outlook"]}
-      />
-
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Crop Health"
-          value="91%"
-          detail="AI field condition score"
-          icon={Sprout}
-          tone="emerald"
-        />
-        <StatCard
-          label="Soil Moisture"
-          value="69%"
-          detail="Safe irrigation window"
-          icon={Droplets}
-          tone="cyan"
-        />
-        <StatCard
-          label="Rainfall Risk"
-          value="31%"
-          detail="Live weather input"
-          icon={CloudSun}
-          tone="amber"
-        />
-        <StatCard
-          label="Yield Outlook"
-          value="+12%"
-          detail="Pilot season projection"
-          icon={TrendingUp}
-          tone="emerald"
-        />
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-        <Panel title="Farm Climate And Crop Trend">
-          <div className="h-96 min-h-96">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <LineChart data={farmData}>
-                <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="label" stroke="rgba(255,255,255,0.55)" />
-                <YAxis stroke="rgba(255,255,255,0.55)" />
-                <Tooltip
-                  contentStyle={{
-                    background: "#07110f",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: 8,
-                  }}
-                />
-                <Line dataKey="cropHealth" stroke="#bef264" strokeWidth={3} />
-                <Line dataKey="moisture" stroke="#67e8f9" strokeWidth={3} />
-                <Line dataKey="irrigation" stroke="#fbbf24" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Panel>
-
-        <Panel title="Farm Pilot Actions">
-          <div className="space-y-3">
-            {[
-              ["Irrigation", "Delay heavy watering for 18 hours."],
-              ["Planting", "Weather window is suitable for field prep."],
-              ["Crop stress", "North plot needs inspection after heat rise."],
-              ["Report", "Generate farm advisory for field team."],
-            ].map(([label, detail]) => (
-              <div key={label} className="rounded-lg border border-white/10 bg-black/25 p-4">
-                <div className="flex items-center gap-3">
-                  <Sprout className="h-5 w-5 text-lime-200" />
-                  <p className="font-semibold">{label}</p>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-white/60">{detail}</p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-    </div>
-  );
-}
-
-function FaultModule() {
-  return (
-    <div className="space-y-5">
-      <SignalRibbon
-        title="Fault Intelligence"
-        detail="Rank machine risks by confidence, urgency, and operational impact before downtime starts."
-        items={["Thermal drift", "Load imbalance", "UPS stress", "Maintenance action"]}
-      />
-      <div className="grid gap-5 md:grid-cols-3">
-        <StatCard label="Open Risks" value="3" detail="AI-ranked maintenance items" icon={AlertTriangle} />
-        <StatCard label="Highest Confidence" value="91%" detail="Transformer TX-04" icon={Cpu} />
-        <StatCard label="Prevented Downtime" value="18 hrs" detail="Pilot estimate this month" icon={ShieldCheck} />
-      </div>
-      <Panel title="AI Fault Detection Queue">
-        <div className="space-y-3">
-          {faultSignals.map((fault) => (
-            <div key={fault.asset} className="grid gap-3 rounded-lg border border-white/10 bg-black/20 p-4 md:grid-cols-[1fr_auto_auto] md:items-center">
-              <div>
-                <p className="font-semibold">{fault.asset}</p>
-                <p className="mt-1 text-sm text-white/55">{fault.action}</p>
-              </div>
-              <span className="rounded-full border border-amber-200/20 bg-amber-300/10 px-3 py-1 text-sm text-amber-100">
-                {fault.risk}
-              </span>
-              <span className="text-sm text-white/65">{fault.confidence}% confidence</span>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
-  );
-}
-
-function ReportsModule({ report }: { report: Report | null }) {
-  return (
-    <div className="space-y-5">
-      <PilotReport report={report} />
-      <Panel
-        title="Report Automation"
-        action={<button className="rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-[#06110f]">Generate</button>}
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          {reports.map((item) => (
-            <div key={item} className="flex items-center justify-between rounded-lg bg-black/25 p-4">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-emerald-300" />
-                <span>{item}</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-white/40" />
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
-  );
-}
-
-function InspectionsModule({
-  handleInspection,
-  inspection,
-  uploadName,
-}: {
-  handleInspection: (file: File | null) => void;
-  inspection: InspectionResult | null;
-  uploadName: string;
-}) {
-  return (
-    <div className="space-y-5">
-      <SignalRibbon
-        title="Inspection Evidence Hub"
-        detail="Collect field evidence, queue computer inspection, and attach findings to the operational record."
-        items={["Upload", "Classify", "Inspect", "Attach"]}
-      />
-    <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-      <Panel title="Inspection Upload">
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-emerald-300/35 bg-black/25 p-10 text-center text-sm text-white/65 transition hover:border-emerald-200">
-          <UploadCloud className="mb-4 h-10 w-10 text-emerald-300" />
-          {uploadName}
-          <span className="mt-2 text-xs text-white/40">Images and PDFs up to 10 MB</span>
-          <input
-            className="sr-only"
-            type="file"
-            accept="image/*,.pdf"
-            onChange={(event) => handleInspection(event.target.files?.[0] ?? null)}
-          />
-        </label>
-        {inspection ? (
-          <div className="mt-5 rounded-lg bg-emerald-300/10 p-4 text-sm text-emerald-100">
-            {inspection.engine}
-          </div>
-        ) : null}
-      </Panel>
-      <Panel title="Computer Inspection Engine">
-        <div className="grid gap-4 md:grid-cols-3">
-          {["Evidence received", "Anomaly scan", "Report queued"].map((item) => (
-            <div key={item} className="rounded-lg bg-black/25 p-4">
-              <Camera className="h-5 w-5 text-emerald-300" />
-              <p className="mt-4 font-semibold">{item}</p>
-              <p className="mt-2 text-sm text-white/55">Pilot workflow active</p>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
-    </div>
-  );
-}
-
-function MarketplaceModule() {
-  return (
-    <section className="relative flex min-h-[60vh] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.16),transparent_35%),linear-gradient(135deg,rgba(25,18,8,0.92),rgba(6,9,8,0.96))] p-8 text-center shadow-2xl">
-      <div className="absolute inset-8 rounded-lg border border-amber-200/10" />
-      <div className="absolute left-10 top-10 h-3 w-3 rounded-full bg-amber-200 brief-pulse" />
-      <div className="absolute bottom-14 right-16 h-2 w-2 rounded-full bg-emerald-300 brief-pulse" />
-      <div className="max-w-xl">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-amber-300/15 text-amber-100">
-          <ShoppingCart className="h-8 w-8" />
-        </div>
-        <h2 className="mt-6 text-4xl font-semibold">Digital Marketplace</h2>
-        <p className="mt-4 text-white/65">
-          Coming soon. This future module will support trusted energy equipment,
-          services, and partner listings after the pilot dashboard is live.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function Dashboard() {
+export default function Dashboard() {
   return (
     <ProtectedRoute>
       <DashboardContent />
     </ProtectedRoute>
   );
 }
-
-export default Dashboard;

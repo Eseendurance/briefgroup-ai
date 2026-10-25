@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Brief Group AI",
-    template: "%s | Brief Group AI",
+    default: "Brief Group | Practical tools for people doing important work",
+    template: "%s | Brief Group",
   },
   description:
-    "Brief Group is a premium global SaaS platform for energy monitoring, smart farm prediction, AI fault detection, automated reports, and computer vision inspection.",
+    "Brief Group helps farming and industrial teams make sense of operations, act on useful signals, and keep people in the loop.",
   keywords: [
     "Brief Group",
     "AI infrastructure",
@@ -33,9 +29,9 @@ export const metadata: Metadata = {
     "predictive analytics",
   ],
   openGraph: {
-    title: "Brief Group AI",
+    title: "Brief Group",
     description:
-      "Premium SaaS for energy monitoring, smart farm prediction, AI fault detection, automated reports, computer vision inspection, and AI customer care.",
+      "Practical tools for people doing important work in farming and industry.",
     type: "website",
   },
   icons: {
@@ -51,7 +47,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

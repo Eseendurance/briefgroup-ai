@@ -7,17 +7,22 @@ type WeatherPayload = {
 };
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, "weather", 30);
+  const limited = await rateLimit(request, "weather", 30);
   if (limited) return limited;
 
-  const unauthorized = requireBearerToken(request);
+  const unauthorized = await requireBearerToken(request);
   if (unauthorized) return unauthorized;
 
   const body = (await request.json().catch(() => null)) as WeatherPayload | null;
-  const latitude = body?.latitude ?? 6.5244;
-  const longitude = body?.longitude ?? 3.3792;
+  const latitude = Number(body?.latitude ?? 6.5244);
+  const longitude = Number(body?.longitude ?? 3.3792);
 
-  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    Math.abs(latitude) > 90 ||
+    Math.abs(longitude) > 180
+  ) {
     return apiError("Invalid coordinates.");
   }
 

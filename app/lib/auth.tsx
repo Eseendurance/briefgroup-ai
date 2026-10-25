@@ -86,8 +86,8 @@ export function ProtectedRoute({
 
   if (loading || !user || (adminOnly && !isAdmin)) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#07110f] text-white">
-        <div className="h-12 w-12 animate-spin rounded-full border-2 border-emerald-300/30 border-t-emerald-300" />
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-800">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-700" />
       </main>
     );
   }
