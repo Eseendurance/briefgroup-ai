@@ -1,14 +1,13 @@
 "use client";
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 import { ArrowLeft, ArrowRight, Check, Sprout } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/app/lib/firebase";
+import { auth } from "@/app/lib/firebase";
 
 const roles = [
   "Farm owner",
@@ -72,17 +71,24 @@ export default function RegisterPage() {
       accountCreated = true;
       setProfileSavePending(true);
 
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        role,
-        goal,
-        workspaceName: workspaceName.trim(),
-        teamSize,
-        region: region.trim(),
-        enableHealthHub: false,
-        safetyReminders: true,
-        createdAt: serverTimestamp(),
+      const profileResponse = await fetch("/api/profile", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${await user.getIdToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role,
+          goal,
+          workspaceName: workspaceName.trim(),
+          teamSize,
+          region: region.trim(),
+        }),
       });
+      const profileResult = (await profileResponse.json()) as { error?: string };
+      if (!profileResponse.ok) {
+        throw new Error(profileResult.error || "We could not save your pilot profile.");
+      }
 
       const workspaceResponse = await fetch("/api/workspaces", {
         method: "POST",

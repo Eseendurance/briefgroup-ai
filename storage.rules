@@ -9,11 +9,7 @@ service firebase.storage {
     match /inspections/{userId}/{fileName} {
       allow read: if signedIn()
         && request.auth.uid == userId;
-      allow create, update: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*|application/pdf');
-      allow delete: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
     }
 
     match /{allPaths=**} {

@@ -11,34 +11,26 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, update, delete: if ownsUserDocument(userId);
-      allow create: if ownsUserDocument(userId);
+      allow read: if ownsUserDocument(userId);
+      allow write: if false;
     }
 
     match /inspections/{inspectionId} {
       allow read: if signedIn()
         && resource.data.ownerId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if signedIn()
-        && resource.data.ownerId == request.auth.uid;
+      allow write: if false;
     }
 
     match /reports/{reportId} {
       allow read: if signedIn()
         && resource.data.ownerId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if signedIn()
-        && resource.data.ownerId == request.auth.uid;
+      allow write: if false;
     }
 
     match /aiInteractions/{interactionId} {
       allow read: if signedIn()
         && resource.data.ownerId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if false;
+      allow write: if false;
     }
 
     match /admin/{document=**} {

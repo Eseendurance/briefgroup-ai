@@ -83,10 +83,13 @@ model Workspace {
   logoUrl                String?
   brandColor             String             @default("#047857")
   customDomain           String?            @unique
+  customDomainVerifiedAt DateTime?
+  domainVerificationToken String?
   members                WorkspaceMember[]
   invitations            WorkspaceInvitation[]
   apiKeys                ApiKey[]
   usageLogs              UsageLog[]
+  monthlyUsage           WorkspaceUsage[]
   auditLogs              AuditLog[]
   checkoutAttempts       CheckoutAttempt[]
   billingEvents          BillingEvent[]
@@ -129,12 +132,26 @@ model UsageLog {
   userId      String
   endpoint    String
   tokensUsed  Int      @default(0)
+  creditsUsed Int      @default(0)
   createdAt   DateTime @default(now())
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, createdAt])
   @@index([userId, createdAt])
+}
+
+model WorkspaceUsage {
+  id          String   @id @default(cuid())
+  workspaceId String
+  periodStart DateTime
+  usedCredits Int      @default(0)
+  reservedCredits Int  @default(0)
+  updatedAt   DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, periodStart])
+  @@index([workspaceId, periodStart])
 }
 
 model ApiKey {

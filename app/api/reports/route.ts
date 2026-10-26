@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError, rateLimit } from "@/app/lib/api-security";
 import { requireWorkspaceWriteAccess } from "@/app/lib/billing-access";
+import { getFirebaseAdmin } from "@/app/lib/firebase-admin";
 
 type ReportPayload = {
   energyLoad?: number;
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     machineHealth * 0.45 + (100 - rainfallRisk) * 0.25 + (100 - energyLoad) * 0.3,
   );
 
-  return NextResponse.json({
+  const result = {
     title: "Brief Group Operational Summary",
     generatedAt: new Date().toISOString(),
     operationalScore,
@@ -63,5 +64,14 @@ export async function POST(request: NextRequest) {
         ? `Inspection note captured: ${inspectionFindings}`
         : "Upload inspection evidence to enrich future reports.",
     ],
+  };
+
+  const { firestore } = getFirebaseAdmin();
+  const report = await firestore.collection("reports").add({
+    ...result,
+    ownerId: access.identity.uid,
+    workspaceId: access.workspace.id,
+    createdAt: new Date(),
   });
+  return NextResponse.json({ ...result, id: report.id }, { status: 201 });
 }

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
+import { Plan, SubscriptionStatus } from "@prisma/client";
 import { findWorkspaceAccess, requireWorkspaceWriteAccess } from "@/app/lib/billing-access";
 import { getPrisma } from "@/app/lib/prisma";
+import { utcMonthStart, workspaceCreditLimit, workspaceSeatLimit } from "@/app/lib/workspace-limits";
 
 type WorkspaceSettingsPayload = {
   name?: unknown;
@@ -49,18 +52,53 @@ export async function GET(request: NextRequest) {
   if (!workspace) {
     return NextResponse.json({ error: "Workspace not found." }, { status: 404 });
   }
+  const [monthlyUsage, pendingInvitations] = await Promise.all([
+    prisma.workspaceUsage.findUnique({
+      where: {
+        workspaceId_periodStart: {
+          workspaceId: workspace.id,
+          periodStart: utcMonthStart(),
+        },
+      },
+      select: { usedCredits: true, reservedCredits: true },
+    }),
+    prisma.workspaceInvitation.count({
+      where: {
+        workspaceId: workspace.id,
+        acceptedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    }),
+  ]);
 
   const trialDaysRemaining = Math.max(
     0,
     Math.ceil((workspace.trialEndsAt.getTime() - Date.now()) / 86_400_000),
   );
   const effectiveWorkspace =
-    workspace.subscriptionStatus === "TRIALING" && trialDaysRemaining === 0
-      ? { ...workspace, subscriptionStatus: "EXPIRED" }
+    workspace.subscriptionStatus === SubscriptionStatus.TRIALING && trialDaysRemaining === 0
+      ? { ...workspace, subscriptionStatus: SubscriptionStatus.EXPIRED }
       : workspace;
 
   return NextResponse.json({
     workspace: effectiveWorkspace,
+    usage: {
+      seatsUsed: workspace._count.members,
+      pendingInvitations,
+      seatLimit: workspaceSeatLimit(workspace.plan),
+      creditsUsed: monthlyUsage?.usedCredits ?? 0,
+      creditsReserved: monthlyUsage?.reservedCredits ?? 0,
+      creditLimit: workspaceCreditLimit(
+        workspace.plan,
+        effectiveWorkspace.subscriptionStatus as SubscriptionStatus,
+      ),
+    },
+    domainVerificationToken:
+      (access.role === "OWNER" || access.role === "ADMIN") &&
+      effectiveWorkspace.customDomain &&
+      !effectiveWorkspace.customDomainVerifiedAt
+        ? effectiveWorkspace.domainVerificationToken
+        : null,
     trialDaysRemaining,
     memberRole: access.role,
     canManage: access.role === "OWNER" || access.role === "ADMIN",
@@ -104,6 +142,22 @@ export async function PATCH(request: NextRequest) {
   }
 
   const prisma = getPrisma();
+  const settingCustomDomain =
+    customDomain !== undefined && customDomain !== (access.workspace.customDomain ?? "");
+  if (
+    settingCustomDomain &&
+    customDomain &&
+    (access.workspace.plan !== Plan.BUSINESS &&
+      access.workspace.plan !== Plan.ENTERPRISE)
+  ) {
+    return NextResponse.json(
+      { error: "Custom domains are available on Business and Enterprise plans." },
+      { status: 402 },
+    );
+  }
+  const domainVerificationToken = settingCustomDomain && customDomain
+    ? randomBytes(24).toString("hex")
+    : undefined;
   const workspace = await prisma.$transaction(async (transaction) => {
     const updated = await transaction.workspace.update({
       where: { id: access.workspace.id },
@@ -113,6 +167,12 @@ export async function PATCH(request: NextRequest) {
         ...(logoUrl !== undefined ? { logoUrl: logoUrl || null } : {}),
         ...(brandColor !== undefined ? { brandColor } : {}),
         ...(customDomain !== undefined ? { customDomain: customDomain || null } : {}),
+        ...(settingCustomDomain
+          ? {
+              customDomainVerifiedAt: null,
+              domainVerificationToken: domainVerificationToken ?? null,
+            }
+          : {}),
       },
     });
     await transaction.auditLog.create({
@@ -125,5 +185,8 @@ export async function PATCH(request: NextRequest) {
     return updated;
   });
 
-  return NextResponse.json({ workspace });
+  return NextResponse.json({
+    workspace,
+    domainVerificationToken: domainVerificationToken ?? null,
+  });
 }

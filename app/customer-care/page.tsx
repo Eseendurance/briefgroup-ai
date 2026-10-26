@@ -10,12 +10,11 @@ import {
   Send,
   UserRound,
 } from "lucide-react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
-import { auth, db } from "@/app/lib/firebase";
+import { auth } from "@/app/lib/firebase";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -57,9 +56,13 @@ export default function CustomerCarePage() {
     setSaveWarning("");
 
     try {
+      const user = auth.currentUser;
       const response = await fetch("/api/ai/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(user ? { Authorization: `Bearer ${await user.getIdToken()}` } : {}),
+        },
         body: JSON.stringify({ domain: "general", message: question }),
       });
       const result = (await response.json()) as {
@@ -75,19 +78,29 @@ export default function CustomerCarePage() {
         result.reply || "I couldn't prepare a reply. Please try again.";
       setMessages((current) => [...current, { role: "assistant", text: reply }]);
 
-      const user = auth.currentUser;
       if (user) {
         try {
-          await addDoc(collection(db, "aiInteractions"), {
-            ownerId: user.uid,
-            domain: "general",
-            prompt: question,
-            reply,
-            createdAt: serverTimestamp(),
+          const saveResponse = await fetch("/api/ai/interactions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${await user.getIdToken()}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              domain: "general",
+              prompt: question,
+              reply,
+            }),
           });
-        } catch {
+          if (!saveResponse.ok) {
+            const saveResult = (await saveResponse.json()) as { error?: string };
+            throw new Error(saveResult.error || "Conversation could not be saved.");
+          }
+        } catch (saveError) {
           setSaveWarning(
-            "Your answer is ready, but we could not save this conversation to your account.",
+            saveError instanceof Error
+              ? `Your answer is ready, but ${saveError.message}`
+              : "Your answer is ready, but we could not save this conversation.",
           );
         }
       }

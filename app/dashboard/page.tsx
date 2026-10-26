@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  addDoc,
   collection,
   doc,
   type DocumentData,
@@ -9,11 +8,8 @@ import {
   getDocs,
   limit,
   query,
-  serverTimestamp,
-  setDoc,
   where,
 } from "firebase/firestore";
-import { deleteObject, ref, uploadBytes } from "firebase/storage";
 import {
   Activity,
   ArrowRight,
@@ -38,7 +34,7 @@ import {
   useState,
 } from "react";
 import { ProtectedRoute, useAuth } from "@/app/lib/auth";
-import { db, storage } from "@/app/lib/firebase";
+import { db } from "@/app/lib/firebase";
 
 type Report = {
   operationalScore: number;
@@ -242,11 +238,6 @@ function DashboardContent() {
         throw new Error(result.error || "We could not create that report.");
       }
 
-      const reportToSave = { ...result, ownerId: user.uid };
-      await addDoc(collection(db, "reports"), {
-        ...reportToSave,
-        createdAt: serverTimestamp(),
-      });
       setReport(result);
       setReports((current) => [result, ...current].slice(0, 10));
       setNotice("Your operational summary is ready and saved to your account.");
@@ -275,28 +266,21 @@ function DashboardContent() {
       return;
     }
 
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-100);
-    const storagePath = `inspections/${user.uid}/${crypto.randomUUID()}-${safeName}`;
-    const fileRef = ref(storage, storagePath);
     setError("");
     setNotice("");
     setIsUploading(true);
 
     try {
-      await uploadBytes(fileRef, file, { contentType: file.type });
-      try {
-        await addDoc(collection(db, "inspections"), {
-          ownerId: user.uid,
-          fileName: file.name,
-          storagePath,
-          fileSize: file.size,
-          contentType: file.type,
-          status: "stored",
-          createdAt: serverTimestamp(),
-        });
-      } catch (saveError) {
-        await deleteObject(fileRef);
-        throw saveError;
+      const formData = new FormData();
+      formData.set("file", file);
+      const response = await fetch("/api/inspections", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+        body: formData,
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || "We could not upload that file.");
       }
       setUploadedName(file.name);
       setNotice("Inspection evidence was uploaded and saved to your account.");
@@ -317,11 +301,18 @@ function DashboardContent() {
     setError("");
     setIsSavingPreference(true);
     try {
-      await setDoc(
-        doc(db, "users", user.uid),
-        { enableHealthHub: enabled, safetyReminders: enabled },
-        { merge: true },
-      );
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${await user.getIdToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enableHealthHub: enabled }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || "We could not save that preference.");
+      }
       setHealthHubEnabled(enabled);
       setNotice(
         enabled

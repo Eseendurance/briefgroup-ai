@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/app/lib/api-security";
+import { requireWorkspaceWriteAccess } from "@/app/lib/billing-access";
+import {
+  releaseWorkspaceCredits,
+  reserveWorkspaceCredits,
+  settleWorkspaceCredits,
+  workspaceCreditLimit,
+} from "@/app/lib/workspace-limits";
 
 const domainGuidance = {
   general:
@@ -29,6 +36,11 @@ type GeminiResponse = {
       parts?: { text?: string }[];
     };
   }[];
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  };
 };
 
 function isChatDomain(domain: unknown): domain is ChatDomain {
@@ -72,6 +84,55 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const hasBearerToken = request.headers.has("authorization");
+  const access = hasBearerToken ? await requireWorkspaceWriteAccess(request) : null;
+  if (access instanceof NextResponse) return access;
+
+  let reservation:
+    | { periodStart: Date; reservedCredits: number }
+    | undefined;
+  if (access) {
+    const estimatedInput = Math.ceil(message.length / 2) + 250;
+    const reserve = estimatedInput + 700;
+    const limit = workspaceCreditLimit(
+      access.workspace.plan,
+      access.workspace.subscriptionStatus,
+    );
+    if (limit === 0) {
+      return NextResponse.json(
+        { error: "This workspace does not have an active AI credit allowance." },
+        { status: 402 },
+      );
+    }
+    const creditReservation = await reserveWorkspaceCredits({
+      workspaceId: access.workspace.id,
+      credits: reserve,
+      limit,
+    });
+    if (!creditReservation) {
+      return NextResponse.json(
+        {
+          error: "Your workspace has reached its monthly AI credit allowance.",
+          code: "AI_CREDIT_LIMIT_REACHED",
+          billingUrl: "/workspace#billing",
+        },
+        { status: 429 },
+      );
+    }
+    reservation = creditReservation;
+  }
+
+  const releaseReservation = async () => {
+    if (reservation && access) {
+      await releaseWorkspaceCredits({
+        workspaceId: access.workspace.id,
+        periodStart: reservation.periodStart,
+        reservedCredits: reservation.reservedCredits,
+      });
+      reservation = undefined;
+    }
+  };
+
   const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
   let providerResponse: Response;
   try {
@@ -101,6 +162,7 @@ export async function POST(request: NextRequest) {
       },
     );
   } catch (error) {
+    await releaseReservation();
     if (error instanceof DOMException && error.name === "TimeoutError") {
       return NextResponse.json(
         { error: "BriefGroup AI took too long to respond. Please try again." },
@@ -114,6 +176,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!providerResponse.ok) {
+    await releaseReservation();
     if (providerResponse.status === 429) {
       return NextResponse.json(
         { error: "BriefGroup AI is busy right now. Please try again shortly." },
@@ -132,17 +195,54 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const result = (await providerResponse.json()) as GeminiResponse;
+  let result: GeminiResponse;
+  try {
+    result = (await providerResponse.json()) as GeminiResponse;
+  } catch {
+    await releaseReservation();
+    return NextResponse.json(
+      { error: "BriefGroup AI returned an unreadable response. Please try again." },
+      { status: 502 },
+    );
+  }
   const reply = result.candidates
     ?.flatMap((candidate) => candidate.content?.parts ?? [])
     .map((part) => part.text)
     .find((text): text is string => typeof text === "string" && text.length > 0);
 
   if (!reply) {
+    await releaseReservation();
     return NextResponse.json(
       { error: "BriefGroup AI did not return a response. Please try again." },
       { status: 502 },
     );
+  }
+
+  if (reservation && access) {
+    const promptTokens =
+      result.usageMetadata?.promptTokenCount ?? Math.ceil(message.length / 2) + 250;
+    const outputTokens =
+      result.usageMetadata?.candidatesTokenCount ?? Math.ceil(reply.length / 4);
+    const totalTokens =
+      result.usageMetadata?.totalTokenCount ?? promptTokens + outputTokens;
+    const actualCredits = Math.max(1, promptTokens + outputTokens);
+    if (actualCredits > reservation.reservedCredits) {
+      await releaseReservation();
+      return NextResponse.json(
+        { error: "The response exceeded the reserved workspace usage. Please try again." },
+        { status: 502 },
+      );
+    }
+    await settleWorkspaceCredits({
+      workspaceId: access.workspace.id,
+      userId: access.userId,
+      periodStart: reservation.periodStart,
+      reservedCredits: reservation.reservedCredits,
+      actualCredits,
+      endpoint: `/api/ai/chat:${domain}`,
+      tokensUsed: totalTokens,
+    });
+    reservation = undefined;
   }
 
   return NextResponse.json({ reply });
